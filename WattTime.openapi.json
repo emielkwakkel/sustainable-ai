@@ -1,0 +1,2216 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "WattTime Data API",
+    "version": "V3",
+    "x-logo": {
+      "url": "WattTime-logo-2023-black-1920px_wpad.png",
+      "backgroundColor": "#F6F6F6",
+      "altText": "WattTime Logo"
+    }
+  },
+  "servers": [
+    { "url": "https://api.watttime.org", "description": "WattTime Base API" }
+  ],
+  "tags": [
+    {
+      "name": "Introduction",
+      "description": "The WattTime API provides access to real-time, forecast, and historical data for electric grids around the world, including marginal emissions data. For the different signals we provide, see the [data signals page](https://www.watttime.org/data-signals).\n\nIf you’re curious about what you can do with this data, [see the solutions we support](https://www.watttime.org/), where you can dive into the various use cases. A common example of how to use the MOER value is to schedule load at the cleanest times of day.\n\nYou can access the API by sending standard HTTP requests to the endpoints listed below. The `/v3/historical`, `/v3/forecast`, and `/v3/maps` endpoints are only available to subscribers. However, if you don’t yet have a subscription, you can preview all of the available region-specific data by providing `CAISO_NORTH` as the region for your requests. A comparison of the different available data plans can be found [here](https://www.watttime.org/docs-dev/data-plans/).\n\nPython3 example code is provided in the right pane of this documentation which shows how to interact with the API endpoints. You can kick start your development by using our [python client/SDK](https://github.com/WattTime/watttime-python-client).\n\n## Restrictions\n\nThere is a strict limit on the rate at which you may query the API. From any user, we allow a maximum of 3,000 requests in any 5-minute rolling window (an average of 10 requests per second). There is also a lower limit specific to the `/login` endpoint, which is 100 requests in 5 minutes. If requests exceed this, an `HTTP 429` error code is returned.\n\n**The API rate limit is a total of 3,000 requests in 5 minutes (an average of 10 per second). The limit for /login is 100 requests in 5 minutes.**\n\n## API Status Page and User Alerts\n\nWattTime publishes the current and historical uptime on the [API Status Page](https://status.watttime.org/). This page shows upcoming scheduled maintenance and provides updates during outages or maintenance. Users should subscribe to alerts via the status page to be kept up to date. This page is our method of communicating updates to our users related to maintenance, outages, and announcements related to version upgrades. Follow these instructions to subscribe to alerts:\n1. Navigate to the [WattTime API Status Page](https://status.watttime.org/)\n1. Click the 'subscribe to updates' button in the top right corner\n1. Select your preferred means of notification (email, SMS, Slack, webhook)\n1. Enter your contact information (this will not be used for any other purpose)\n\n## Best Practices for API Usage\nIf using this API to control many smart devices in different locations, we suggest the following protocol. For each device location, use GPS lat/lon to query `/v3/region-from-loc` in order to determine the region for the desired `signal_type`. Then, query the other endpoints (e.g. `/v3/forecast`, `/v3/historical`, etc.) with the resulting region to receive signal data.\n\nBecause grid region boundaries are occasionally updated, it is important to re-query `/v3/region-from-loc` at least once a month to ensure devices are receiving the signal corresponding to their location. The `/v3/maps` endpoint provides a GeoJSON that can be used for offline geocoding. The GeoJSON file includes a `last_updated` field that changes whenever the grid regions change.\n",
+      "x-displayName": "Introduction"
+    },
+    {
+      "name": "Authentication",
+      "description": "To start using the API, first register for an account by using the `/register` endpoint.  Then use the `/login` endpoint to obtain an access token. You can then use your token to access the remainder of our endpoints. You must include your token in an authorization (bearer) header in subsequent requests to retrieve data. Your access token will expire after 30 minutes and you'll need to sign in again to obtain a new one. **Subsequent requests with an invalid, missing, or expired token will return an `HTTP 401` error**.",
+      "x-displayName": "Authentication"
+    },
+    { "name": "GET Account Access", "x-displayName": "GET Account Access" },
+    { "name": "GET Regions and Maps", "x-displayName": "GET Regions and Maps" },
+    { "name": "GET Forecast", "x-displayName": "GET Forecast" },
+    { "name": "GET Historical", "x-displayName": "GET Historical" },
+    { "name": "GET Index", "x-displayName": "GET Index" },
+    {
+      "name": "Technical Support",
+      "description": "For technical questions related to this API and real-time emissions data, please contact support@WattTime.org\n\nIf you are experiencing an outage, please check the WattTime API Status Page to get the status of known outages, and if none are shown, please proceed to contact support@WattTime.org\n\n✅ **For the fastest resolution of your issue, please also include the following along with your inquiry:**\n* HTTP error codes received\n* The code snippet for your query/API request\n* Any relevant screen capture images\n* A short description of what you are trying to accomplish\n* Is this the first attempt? Or, a new error for something that used to work?\n",
+      "x-displayName": "Technical Support"
+    }
+  ],
+  "paths": {
+    "/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register New User",
+        "description": "Provide basic information to self-register for an account.\n\n**Note:** The `/register` endpoint accepts the parameters in the body of the request. It does not accept them in the URL as a query string, because that isn't as secure. The input parameters should be included as a JSON object (in the body), as shown in the sample code on the right.",
+        "operationId": "post_username_register_post",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "name of user that will be used in subsequent calls",
+              "examples": ["freddo"],
+              "title": "Username"
+            },
+            "description": "name of user that will be used in subsequent calls"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "user password. Password must be at least 8 characters, with at least 1 of each alpha, number and special characters.",
+              "examples": ["the_frog"],
+              "title": "Password"
+            },
+            "description": "user password. Password must be at least 8 characters, with at least 1 of each alpha, number and special characters."
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "valid email address. The email address used to register will only be used for communication regarding API outages and updates. The email address will not be shared or used for any other promotional purpose. For others in your organization who would like these updates, they can subscribe to our Status Page.",
+              "examples": ["freddo@frog.org"],
+              "format": "email",
+              "title": "Email"
+            },
+            "description": "valid email address. The email address used to register will only be used for communication regarding API outages and updates. The email address will not be shared or used for any other promotional purpose. For others in your organization who would like these updates, they can subscribe to our Status Page."
+          },
+          {
+            "name": "org",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "description": "organization name",
+              "examples": ["freds world"],
+              "title": "Org"
+            },
+            "description": "organization name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RegisterResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "\n# To register, use the code below. Please note that for these code examples we are using filler values for username\n# (freddo), password (the_frog), email (freddo@frog.org), org (freds world) and you should replace each if you are\n# copying and pasting this code.\n\nimport requests\nregister_url = 'https://api.watttime.org/register'\nparams = {'username': 'freddo',\n         'password': 'the_frog',\n         'email': 'freddo@frog.org',\n         'org': 'freds world'}\nrsp = requests.post(register_url, json=params)\nprint(rsp.text)\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/login": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Login & Obtain Token",
+        "description": "Use HTTP basic auth to exchange username and password for an access token. Remember that you need to include this token in an authorization bearer header for all subsequent data calls. This header has the form: `Authorization: Bearer <your_token>`\n\n**Note:** Token expires after 30 minutes. If a data call returns `HTTP 401` error code, you will need to call `/login` again to receive a new token.",
+        "operationId": "get_token_login_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "\n# To login and obtain an access token, use this code:\n\nimport requests\nfrom requests.auth import HTTPBasicAuth\nlogin_url = 'https://api.watttime.org/login'\nrsp = requests.get(login_url, auth=HTTPBasicAuth('freddo', 'the_frog'))\nTOKEN = rsp.json()['token']\nprint(rsp.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/password": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Password Reset",
+        "description": "Provide your `username` to request an email be sent to you with password reset instructions.",
+        "operationId": "get_password_password_get",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "name of user that will be used in subsequent calls",
+              "examples": ["freddo"],
+              "title": "Username"
+            },
+            "description": "name of user that will be used in subsequent calls"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PasswordResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "\n# To reset your password, use this code:\n\nimport requests\npassword_url = 'https://api.watttime.org/password/?username=freddo'\nrsp = requests.get(password_url)\nprint(rsp.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/v3/region-from-loc": {
+      "get": {
+        "tags": ["GET Regions and Maps"],
+        "summary": "Determine Grid Region",
+        "description": "Emissions intensity varies by location, specifically the location where an energy-using device is interconnected to the grid. This endpoint, provided with latitude and longitude parameters, returns the details of the grid region serving that location, if known, or a Coordinates not found error if the point lies outside of known/covered regions.",
+        "operationId": "get_reg_loc_v3_region_from_loc_get",
+        "parameters": [
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/V3Signals" },
+                { "$ref": "#/components/schemas/V3HistoricalSignals" }
+              ],
+              "description": "signal_type for which to look up region",
+              "examples": ["co2_moer"],
+              "title": "Signal Type"
+            },
+            "description": "signal_type for which to look up region"
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "description": "Latitude of desired location",
+              "examples": [-72.519],
+              "title": "Latitude"
+            },
+            "description": "Latitude of desired location"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "description": "Longitude of desired location",
+              "examples": [42.372],
+              "title": "Longitude"
+            },
+            "description": "Longitude of desired location"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RegionLocResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "\nimport requests\n\nurl = \"https://api.watttime.org/v3/region-from-loc\"\n\n# Provide your TOKEN here, see https://docs.watttime.org/#tag/Authentication/operation/get_token_login_get for more information\nTOKEN = \"\"\nheaders = {\"Authorization\": f\"Bearer {TOKEN}\"}\nparams = {\"latitude\": \"42.372\", \"longitude\": \"-72.519\", \"signal_type\": \"co2_moer\"}\nresponse = requests.get(url, headers=headers, params=params)\nresponse.raise_for_status()\nprint(response.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/v3/maps": {
+      "get": {
+        "tags": ["GET Regions and Maps"],
+        "summary": "Grid Region Map Geometry",
+        "description": "Provides a geojson of the grid region boundary for all regions that WattTime covers globally. Check when the geojson was last updated using the `last_updated` value in the `meta` object of the geojson. Access to this endpoint is restricted to customers with ANALYST or PRO subscriptions. The response is a geojson response, that is a Feature Collection with properties that describe each region, and multipolygon geometry made up of coordinates which define the boundary for each region. The `meta` object contains the date-time that the geojson was last updated and the associated `signal_type`.",
+        "operationId": "get_v3_map_v3_maps_get",
+        "parameters": [
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/V3Signals" },
+                { "$ref": "#/components/schemas/V3HistoricalSignals" },
+                {}
+              ],
+              "description": "Use to select any available `signal_type` which is authorized for your account",
+              "examples": ["co2_moer"],
+              "title": "Signal Type"
+            },
+            "description": "Use to select any available `signal_type` which is authorized for your account"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Map" }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://api.watttime.org/v3/maps\"\n\n# Provide your TOKEN here, see https://docs.watttime.org/#tag/Authentication/operation/get_token_login_get for more information\nTOKEN = \"\"\nheaders = {\"Authorization\": f\"Bearer {TOKEN}\"}\nparams = {\n    \"signal_type\": \"co2_moer\",\n}\nresponse = requests.get(url, headers=headers, params=params)\nresponse.raise_for_status()\nprint(response.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/v3/signal-index": {
+      "get": {
+        "tags": ["GET Index"],
+        "summary": "Get the current CO2 MOER index",
+        "description": "Returns the current index value for the specified `region` for the `co2_moer` signal type. This 0-100 value is the statistical percentile of the current MOER relative to the upcoming 24 hours of forecast MOER values for the specified location (100=dirtiest, 0=cleanest). Values are updated periodically (e.g. at 5-minute frequency), and each value is valid starting from its `point_time` for the duration described in `data_point_period_seconds`. No historical query is available for this endpoint.\n\nData from this endpoint is available for free to all users in all covered regions.",
+        "operationId": "get_signal_index_v3_signal_index_get",
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`",
+              "examples": ["CAISO_NORTH"],
+              "title": "Region"
+            },
+            "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`"
+          },
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "const": "co2_moer",
+              "type": "string",
+              "description": "Only `co2_moer` indices are currently available.",
+              "examples": ["co2_moer"],
+              "title": "Signal Type"
+            },
+            "description": "Only `co2_moer` indices are currently available."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3SignalIndexForecastResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://api.watttime.org/v3/signal-index\"\n\n# Provide your TOKEN here, see https://docs.watttime.org/#tag/Authentication/operation/get_token_login_get for more information\nTOKEN = \"\"\nheaders = {\"Authorization\": f\"Bearer {TOKEN}\"}\nparams = {\n    \"region\": \"CAISO_NORTH\",\n    \"signal_type\": \"co2_moer\",\n}\nresponse = requests.get(url, headers=headers, params=params)\nresponse.raise_for_status()\nprint(response.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/v3/forecast": {
+      "get": {
+        "tags": ["GET Forecast"],
+        "summary": "Get the most recent forecast",
+        "description": "Returns the most recently generated forecast for the specified `region` and `signal_type`. Forecasts are\ngenerated periodically (e.g. at 5-minute frequency, this frequency is described in the `generated_at_period_seconds`\nmetadata), and there is a `data` list made up of `point_time` and `value` pairs in the forecast horizon (e.g. a\n24-hr forecast horizon with 5-min frequency results in 288 values). Each forecast response is valid starting from its\n`generated_at` time until it is superseded by a new forecast with a new `generated_at` time, and each `point_time`\nin the `data` list is valid from its `point_time` for the duration described in `data_point_period_seconds`.",
+        "operationId": "get_current_forecast_v3_forecast_get",
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`",
+              "examples": ["CAISO_NORTH"],
+              "title": "Region"
+            },
+            "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`"
+          },
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [{ "$ref": "#/components/schemas/V3Signals" }, {}],
+              "description": "Use to select any available `signal_type` which is authorized for your account",
+              "examples": ["co2_moer"],
+              "title": "Signal Type"
+            },
+            "description": "Use to select any available `signal_type` which is authorized for your account"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date" },
+                { "type": "null" }
+              ],
+              "description": "Use to return different models from defaults.",
+              "examples": ["2023-03-31"],
+              "title": "Model"
+            },
+            "description": "Use to return different models from defaults."
+          },
+          {
+            "name": "horizon_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 72,
+              "minimum": 0,
+              "description": "Length of forecast horizon in hours. Setting this parameter to `0` will return a single value of the most recently produced forecast",
+              "default": 24,
+              "title": "Horizon Hours"
+            },
+            "description": "Length of forecast horizon in hours. Setting this parameter to `0` will return a single value of the most recently produced forecast"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3SingleForecastResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://api.watttime.org/v3/forecast\"\n\n# Provide your TOKEN here, see https://docs.watttime.org/#tag/Authentication/operation/get_token_login_get for more information\nTOKEN = \"\"\nheaders = {\"Authorization\": f\"Bearer {TOKEN}\"}\nparams = {\n    \"region\": \"CAISO_NORTH\",\n    \"signal_type\": \"co2_moer\",\n}\nresponse = requests.get(url, headers=headers, params=params)\nresponse.raise_for_status()\nprint(response.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/v3/forecast/historical": {
+      "get": {
+        "tags": ["GET Forecast"],
+        "summary": "Get a range of historical forecasted data",
+        "description": "Returns forecast data for the specified `region`, `signal_type`, and time period. The response contains a `data`\nlist made up of `generated_at` and `forecast` pairs that cover the requested time period. The `forecast` list here\nincludes all the values that were generated at the `generated_at` time.`start` and `end` are used to specify which\n`generated_at` forecasts will be returned. Individual queries are limited to 24 hours of `generated_at` forecasts\n(the range of `start` to `end`; this limit equals 288 `generated_at` times).",
+        "operationId": "get_historical_forecast_v3_forecast_historical_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating earliest desired forecast, _used to select the first `generated_at` time_",
+              "examples": ["2023-03-31T13:42:00Z"],
+              "title": "Start"
+            },
+            "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating earliest desired forecast, _used to select the first `generated_at` time_"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating latest desired forecast, _used to select the last `generated_at` time_",
+              "examples": ["2023-03-31T13:42:00Z"],
+              "title": "End"
+            },
+            "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating latest desired forecast, _used to select the last `generated_at` time_"
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`",
+              "examples": ["CAISO_NORTH"],
+              "title": "Region"
+            },
+            "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`"
+          },
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [{ "$ref": "#/components/schemas/V3Signals" }, {}],
+              "description": "Use to select any available `signal_type` which is authorized for your account",
+              "examples": ["co2_moer"],
+              "title": "Signal Type"
+            },
+            "description": "Use to select any available `signal_type` which is authorized for your account"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date" },
+                { "type": "null" }
+              ],
+              "description": "Use to return different models from defaults.",
+              "examples": ["2023-03-31"],
+              "title": "Model"
+            },
+            "description": "Use to return different models from defaults."
+          },
+          {
+            "name": "horizon_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 72,
+              "minimum": 0,
+              "description": "Length of forecast horizon in hours. Setting this parameter to `0` will return a single value of the most recently produced forecast",
+              "default": 24,
+              "title": "Horizon Hours"
+            },
+            "description": "Length of forecast horizon in hours. Setting this parameter to `0` will return a single value of the most recently produced forecast"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ExtendedForecastResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://api.watttime.org/v3/forecast/historical\"\n\n# Provide your TOKEN here, see https://docs.watttime.org/#tag/Authentication/operation/get_token_login_get for more information\nTOKEN = \"\"\nheaders = {\"Authorization\": f\"Bearer {TOKEN}\"}\nparams = {\n    \"region\": \"CAISO_NORTH\",\n    \"start\": \"2023-07-15T00:00Z\",\n    \"end\": \"2023-07-15T01:00Z\",\n    \"signal_type\": \"co2_moer\",\n}\nresponse = requests.get(url, headers=headers, params=params)\nresponse.raise_for_status()\nprint(response.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/v3/historical": {
+      "get": {
+        "tags": ["GET Historical"],
+        "summary": "Get a range of historical signal data",
+        "description": "Returns signal data (e.g. CO₂ MOER in lbs/MWh) for the specified `region`, `signal_type`, and time period. Values\nare published in near real-time, periodically (e.g. at 5-minute frequency), and each value is valid starting from\nits `point_time` for the duration described in `data_point_period_seconds`. The publishing delay (the difference\nbetween the `point_time` for the value and the time that value is available in the API) varies by grid region. In\nsome regions the data will be available within one minute after a certain `point_time`, in other regions there may\nbe a delay of up to a few hours. Each query is limited to 32 days of data. Individual data point values may be\nupdated at any time after publishing (e.g. if better source data is obtained).",
+        "operationId": "get_historical_datapoint_v3_historical_get",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating earliest desired data, _used to select the first `point_time` included in the response_",
+              "examples": ["2023-03-31T13:42:00Z"],
+              "title": "Start"
+            },
+            "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating earliest desired data, _used to select the first `point_time` included in the response_"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating latest desired data, _used to select the last `point_time` included in the response_",
+              "examples": ["2023-03-31T13:42:00Z"],
+              "title": "End"
+            },
+            "description": "(inclusive) ISO8601-compliant timezone-aware date string indicating latest desired data, _used to select the last `point_time` included in the response_"
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`",
+              "examples": ["CAISO_NORTH"],
+              "title": "Region"
+            },
+            "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`"
+          },
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/V3Signals" },
+                { "$ref": "#/components/schemas/V3HistoricalSignals" }
+              ],
+              "description": "Use to select any available `signal_type` which is authorized for your account",
+              "examples": ["co2_moer"],
+              "title": "Signal Type"
+            },
+            "description": "Use to select any available `signal_type` which is authorized for your account"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date" },
+                { "type": "null" }
+              ],
+              "description": "Use to return different models from defaults.",
+              "examples": ["2022-10-01"],
+              "title": "Model"
+            },
+            "description": "Use to return different models from defaults."
+          },
+          {
+            "name": "include_imputed_marker",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Use to return whether or not the value associated with a `point_time` is generated with imputed data.",
+              "examples": [true],
+              "default": false,
+              "title": "Include Imputed Marker"
+            },
+            "description": "Use to return whether or not the value associated with a `point_time` is generated with imputed data."
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ],
+              "description": "Filter results for data newer than the provided datetime.",
+              "examples": ["2022-01-01T00:00:00Z"],
+              "title": "Updated Since"
+            },
+            "description": "Filter results for data newer than the provided datetime."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/V3Response" }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://api.watttime.org/v3/historical\"\n\n# Provide your TOKEN here, see https://docs.watttime.org/#tag/Authentication/operation/get_token_login_get for more information\nTOKEN = \"\"\nheaders = {\"Authorization\": f\"Bearer {TOKEN}\"}\nparams = {\n    \"region\": \"CAISO_NORTH\",\n    \"start\": \"2022-07-15T00:00+00:00\",\n    \"end\": \"2022-07-15T00:05+00:00\",\n    \"signal_type\": \"co2_moer\",\n}\nresponse = requests.get(url, headers=headers, params=params)\nresponse.raise_for_status()\nprint(response.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    },
+    "/v3/my-access": {
+      "get": {
+        "tags": ["GET Account Access"],
+        "summary": "Get information about what your account can access",
+        "description": "This endpoint describes the data that your account has access to. You can use it to plan your data queries or to programmatically monitor for updates (e.g. new regions, new models, etc.).\n\nReturns a nested JSON response containing each combination of `signal_type`, `region`, `endpoint`, and `model` along with additional metadata that applies to each combination.",
+        "operationId": "get_full_my_access_hypercube_v3_my_access_get",
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`",
+              "examples": ["CAISO_NORTH"],
+              "title": "Region"
+            },
+            "description": "Region abbreviation associated with location, from result of query to `/v3/region-from-loc`"
+          },
+          {
+            "name": "signal_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/V3Signals" },
+                { "$ref": "#/components/schemas/V3HistoricalSignals" },
+                {},
+                { "type": "null" }
+              ],
+              "description": "Use to select any available `signal_type` which is authorized for your account",
+              "examples": ["co2_moer"],
+              "title": "Signal Type"
+            },
+            "description": "Use to select any available `signal_type` which is authorized for your account"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PYHypercube" }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://api.watttime.org/v3/my-access\"\n\n# Provide your TOKEN here, see https://docs.watttime.org/#tag/Authentication/operation/get_token_login_get for more information\nTOKEN = \"\"\nheaders = {\"Authorization\": f\"Bearer {TOKEN}\"}\nparams = {}\nresponse = requests.get(url, headers=headers, params=params)\nresponse.raise_for_status()\nprint(response.json())\n",
+            "label": "Python"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": { "$ref": "#/components/schemas/ValidationError" },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginResponse": {
+        "properties": { "token": { "type": "string", "title": "Token" } },
+        "type": "object",
+        "required": ["token"],
+        "title": "LoginResponse",
+        "example": { "token": "abcdef0123456789fedcabc" }
+      },
+      "PasswordResponse": {
+        "properties": { "ok": { "type": "string", "title": "Ok" } },
+        "type": "object",
+        "required": ["ok"],
+        "title": "PasswordResponse",
+        "example": {
+          "ok": "Please check your email for the password reset link"
+        }
+      },
+      "RegionLocResponse": {
+        "properties": {
+          "region": { "type": "string", "title": "Region" },
+          "region_full_name": { "type": "string", "title": "Region Full Name" },
+          "signal_type": { "type": "string", "title": "Signal Type" }
+        },
+        "type": "object",
+        "required": ["region", "region_full_name", "signal_type"],
+        "title": "RegionLocResponse",
+        "example": {
+          "region": "ISONE_WCMA",
+          "region_full_name": "ISONE Western/Central Massachusetts",
+          "signal_type": "co2_moer"
+        }
+      },
+      "RegisterResponse": {
+        "properties": {
+          "user": { "type": "string", "title": "User" },
+          "ok": { "type": "string", "title": "Ok" }
+        },
+        "type": "object",
+        "required": ["user", "ok"],
+        "title": "RegisterResponse",
+        "example": { "ok": "User created", "user": "freddo" }
+      },
+      "V3HistoricalSignals": {
+        "type": "string",
+        "enum": ["co2_aoer"],
+        "title": "V3HistoricalSignals"
+      },
+      "V3Signals": {
+        "type": "string",
+        "enum": ["co2_moer", "health_damage"],
+        "title": "V3Signals"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": { "type": "string", "title": "Message" },
+          "type": { "type": "string", "title": "Error Type" }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": { "type": "string", "title": "Error" },
+          "message": { "type": "string", "title": "Message" },
+          "docs": { "type": "string", "title": "Docs" }
+        },
+        "type": "object",
+        "required": ["error", "message", "docs"],
+        "title": "ErrorResponse",
+        "example": {
+          "docs": "https://docs.watttime.org/",
+          "error": "INVALID_QUERY_PARAMS",
+          "msg": "You've provided invalid parameters in your query"
+        }
+      },
+      "Feature": {
+        "properties": {
+          "type": { "type": "string", "const": "Feature", "title": "Type" },
+          "properties": { "$ref": "#/components/schemas/Properties" },
+          "geometry": { "$ref": "#/components/schemas/Geometry" }
+        },
+        "type": "object",
+        "required": ["type", "properties", "geometry"],
+        "title": "Feature"
+      },
+      "Geometry": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "MultiPolygon",
+            "title": "Type"
+          },
+          "coordinates": {
+            "items": {
+              "items": {
+                "items": { "items": { "type": "number" }, "type": "array" },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Coordinates"
+          }
+        },
+        "type": "object",
+        "required": ["type", "coordinates"],
+        "title": "Geometry"
+      },
+      "Map": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "FeatureCollection",
+            "title": "Type"
+          },
+          "features": {
+            "items": { "$ref": "#/components/schemas/Feature" },
+            "type": "array",
+            "title": "Features"
+          },
+          "meta": { "$ref": "#/components/schemas/Meta" }
+        },
+        "type": "object",
+        "required": ["type", "features", "meta"],
+        "title": "Map"
+      },
+      "Meta": {
+        "properties": {
+          "last_updated": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Updated"
+          },
+          "signal_type": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/V3Signals" },
+              { "$ref": "#/components/schemas/V3HistoricalSignals" },
+              {}
+            ],
+            "title": "Signal Type"
+          }
+        },
+        "type": "object",
+        "required": ["last_updated", "signal_type"],
+        "title": "Meta"
+      },
+      "Properties": {
+        "properties": {
+          "region": { "type": "string", "title": "Region" },
+          "region_full_name": { "type": "string", "title": "Region Full Name" }
+        },
+        "type": "object",
+        "required": ["region", "region_full_name"],
+        "title": "Properties"
+      },
+      "APIV3DataResponseFormat": {
+        "properties": {
+          "point_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Point Time"
+          },
+          "value": { "type": "number", "title": "Value" },
+          "last_updated": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Last Updated"
+          },
+          "imputed_data_used": {
+            "anyOf": [{ "type": "boolean" }, { "type": "null" }],
+            "title": "Imputed Data Used"
+          }
+        },
+        "type": "object",
+        "required": ["point_time", "value"],
+        "title": "APIV3DataResponseFormat",
+        "example": {
+          "imputed_data_used": true,
+          "last_updated": "2023-10-01T00:00:00Z",
+          "point_time": "2022-07-15T00:00:00Z",
+          "value": 870
+        }
+      },
+      "APIV3ExtendedForecastType": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "forecast": {
+            "items": { "$ref": "#/components/schemas/APIV3DataResponseFormat" },
+            "type": "array",
+            "maxItems": 864,
+            "minItems": 1,
+            "title": "Forecast"
+          }
+        },
+        "type": "object",
+        "required": ["generated_at", "forecast"],
+        "title": "APIV3ExtendedForecastType"
+      },
+      "BaseAPIV3ResponseFormat": {
+        "properties": {
+          "point_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Point Time"
+          },
+          "value": { "type": "number", "title": "Value" }
+        },
+        "type": "object",
+        "required": ["point_time", "value"],
+        "title": "BaseAPIV3ResponseFormat",
+        "example": { "point_time": "2022-07-15T00:00:00Z", "value": 870 }
+      },
+      "ModelTypes": {
+        "type": "string",
+        "enum": [
+          "interchange",
+          "average",
+          "binned_regression",
+          "heatrate",
+          "proxy",
+          "synthetic_proxy"
+        ],
+        "title": "ModelTypes"
+      },
+      "V3ExtendedForecastResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/APIV3ExtendedForecastType"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": { "$ref": "#/components/schemas/V3ForecastMetadata" }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "V3ExtendedForecastResponse",
+        "example": {
+          "data": [
+            {
+              "forecast": [
+                { "point_time": "2022-07-15T00:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T00:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T01:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T02:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T03:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T04:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T05:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T06:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T07:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T08:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T09:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T10:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T11:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T12:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T13:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T14:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T15:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T16:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T17:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T18:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T19:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T20:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T21:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T22:55:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:00:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:05:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:10:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:15:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:20:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:25:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:30:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:35:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:40:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:45:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:50:00Z", "value": 870 },
+                { "point_time": "2022-07-15T23:55:00Z", "value": 870 }
+              ],
+              "generated_at": "2022-07-15T00:00:00Z"
+            }
+          ],
+          "meta": {
+            "data_point_period_seconds": 300,
+            "generated_at_period_seconds": 300,
+            "model": { "date": "2023-03-01" },
+            "region": "CAISO_NORTH",
+            "signal_type": "co2_moer",
+            "units": "lbs_co2_per_mwh",
+            "warnings": [
+              {
+                "message": "This is just an example",
+                "type": "EXAMPLE_WARNING"
+              }
+            ]
+          }
+        }
+      },
+      "V3ForecastMetadata": {
+        "properties": {
+          "data_point_period_seconds": {
+            "type": "integer",
+            "title": "Data Point Period Seconds"
+          },
+          "region": { "type": "string", "title": "Region" },
+          "signal_type": {
+            "anyOf": [{}, { "$ref": "#/components/schemas/V3Signals" }],
+            "title": "Signal Type"
+          },
+          "units": { "type": "string", "title": "Units" },
+          "warnings": {
+            "items": { "$ref": "#/components/schemas/WarningType" },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "model": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/V3ModelMetadata" },
+              { "type": "null" }
+            ]
+          },
+          "generated_at_period_seconds": {
+            "type": "integer",
+            "title": "Generated At Period Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_point_period_seconds",
+          "region",
+          "signal_type",
+          "units",
+          "warnings",
+          "generated_at_period_seconds"
+        ],
+        "title": "V3ForecastMetadata",
+        "example": {
+          "data_point_period_seconds": 300,
+          "generated_at_period_seconds": 300,
+          "model": { "date": "2023-03-01" },
+          "region": "CAISO_NORTH",
+          "signal_type": "co2_moer",
+          "units": "lbs_co2_per_mwh",
+          "warnings": [
+            { "message": "This is just an example", "type": "EXAMPLE_WARNING" }
+          ]
+        }
+      },
+      "V3ModelMetadata": {
+        "properties": {
+          "date": { "type": "string", "format": "date", "title": "Date" },
+          "type": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ModelTypes" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["date"],
+        "title": "V3ModelMetadata"
+      },
+      "V3SignalIndexForecastResponse": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/BaseAPIV3ResponseFormat" },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": { "$ref": "#/components/schemas/V3SignalIndexMetadata" }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "V3SignalIndexForecastResponse",
+        "example": {
+          "data": [{ "point_time": "2022-07-15T00:00:00Z", "value": 37.1 }],
+          "meta": {
+            "data_point_period_seconds": 300,
+            "model": { "date": "2023-03-01", "type": "binned_regression" },
+            "region": "CAISO_NORTH",
+            "signal_type": "co2_moer",
+            "units": "percentile",
+            "warnings": [
+              {
+                "message": "This is just an example",
+                "type": "EXAMPLE_WARNING"
+              }
+            ]
+          }
+        }
+      },
+      "V3SignalIndexMetadata": {
+        "properties": {
+          "data_point_period_seconds": {
+            "type": "integer",
+            "title": "Data Point Period Seconds"
+          },
+          "region": { "type": "string", "title": "Region" },
+          "signal_type": {
+            "type": "string",
+            "const": "co2_moer",
+            "title": "Signal Type"
+          },
+          "units": { "type": "string", "title": "Units" },
+          "warnings": {
+            "items": { "$ref": "#/components/schemas/WarningType" },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "model": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/V3ModelMetadata" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_point_period_seconds",
+          "region",
+          "signal_type",
+          "units",
+          "warnings"
+        ],
+        "title": "V3SignalIndexMetadata",
+        "example": {
+          "data_point_period_seconds": 300,
+          "model": { "date": "2023-03-01", "type": "binned_regression" },
+          "region": "CAISO_NORTH",
+          "signal_type": "co2_moer",
+          "units": "percentile",
+          "warnings": [
+            { "message": "This is just an example", "type": "EXAMPLE_WARNING" }
+          ]
+        }
+      },
+      "V3SingleForecastMetadata": {
+        "properties": {
+          "data_point_period_seconds": {
+            "type": "integer",
+            "title": "Data Point Period Seconds"
+          },
+          "region": { "type": "string", "title": "Region" },
+          "signal_type": {
+            "anyOf": [{}, { "$ref": "#/components/schemas/V3Signals" }],
+            "title": "Signal Type"
+          },
+          "units": { "type": "string", "title": "Units" },
+          "warnings": {
+            "items": { "$ref": "#/components/schemas/WarningType" },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "model": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/V3ModelMetadata" },
+              { "type": "null" }
+            ]
+          },
+          "generated_at_period_seconds": {
+            "type": "integer",
+            "title": "Generated At Period Seconds"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_point_period_seconds",
+          "region",
+          "signal_type",
+          "units",
+          "warnings",
+          "generated_at_period_seconds",
+          "generated_at"
+        ],
+        "title": "V3SingleForecastMetadata",
+        "example": {
+          "data_point_period_seconds": 300,
+          "generated_at": "2022-07-15T00:00:00Z",
+          "generated_at_period_seconds": 300,
+          "model": { "date": "2023-03-01" },
+          "region": "CAISO_NORTH",
+          "signal_type": "co2_moer",
+          "units": "lbs_co2_per_mwh",
+          "warnings": [
+            { "message": "This is just an example", "type": "EXAMPLE_WARNING" }
+          ]
+        }
+      },
+      "V3SingleForecastResponse": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/BaseAPIV3ResponseFormat" },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": { "$ref": "#/components/schemas/V3SingleForecastMetadata" }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "V3SingleForecastResponse",
+        "example": {
+          "data": [
+            { "point_time": "2022-07-15T00:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T00:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T01:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T02:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T03:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T04:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T05:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T06:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T07:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T08:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T09:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T10:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T11:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T12:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T13:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T14:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T15:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T16:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T17:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T18:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T19:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T20:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T21:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T22:55:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:00:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:05:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:10:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:15:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:20:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:25:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:30:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:35:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:40:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:45:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:50:00Z", "value": 870 },
+            { "point_time": "2022-07-15T23:55:00Z", "value": 870 }
+          ],
+          "meta": {
+            "data_point_period_seconds": 300,
+            "generated_at": "2022-07-15T00:00:00Z",
+            "generated_at_period_seconds": 300,
+            "model": { "date": "2023-03-01" },
+            "region": "CAISO_NORTH",
+            "signal_type": "co2_moer",
+            "units": "lbs_co2_per_mwh",
+            "warnings": [
+              {
+                "message": "This is just an example",
+                "type": "EXAMPLE_WARNING"
+              }
+            ]
+          }
+        }
+      },
+      "WarningType": {
+        "properties": {
+          "type": { "type": "string", "title": "Type" },
+          "message": { "type": "string", "title": "Message" }
+        },
+        "type": "object",
+        "required": ["type", "message"],
+        "title": "WarningType"
+      },
+      "HCEndpoint": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "enum": ["v3/forecast", "v3/historical"],
+            "title": "Endpoint"
+          },
+          "models": {
+            "items": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/HCHistoricalModel" },
+                { "$ref": "#/components/schemas/HCForecastModel" }
+              ]
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": ["endpoint", "models"],
+        "title": "HCEndpoint"
+      },
+      "HCForecastModel": {
+        "properties": {
+          "model": { "type": "string", "format": "date", "title": "Model" },
+          "data_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Start"
+          },
+          "data_end": {
+            "anyOf": [
+              { "type": "string", "format": "date" },
+              { "type": "null" }
+            ],
+            "title": "Data End"
+          },
+          "train_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Train Start"
+          },
+          "train_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Train End"
+          },
+          "historical_model": {
+            "anyOf": [
+              { "type": "string", "format": "date" },
+              { "type": "null" }
+            ],
+            "title": "Historical Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "data_start",
+          "train_start",
+          "train_end",
+          "historical_model"
+        ],
+        "title": "HCForecastModel"
+      },
+      "HCHistoricalModel": {
+        "properties": {
+          "model": { "type": "string", "format": "date", "title": "Model" },
+          "data_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Start"
+          },
+          "data_end": {
+            "anyOf": [
+              { "type": "string", "format": "date" },
+              { "type": "null" }
+            ],
+            "title": "Data End"
+          },
+          "train_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Train Start"
+          },
+          "train_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Train End"
+          },
+          "type": { "$ref": "#/components/schemas/ModelTypes" }
+        },
+        "type": "object",
+        "required": ["model", "data_start", "train_start", "train_end", "type"],
+        "title": "HCHistoricalModel"
+      },
+      "HCRegion": {
+        "properties": {
+          "region": { "type": "string", "title": "Region" },
+          "region_full_name": { "type": "string", "title": "Region Full Name" },
+          "parent": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Parent"
+          },
+          "data_point_period_seconds": {
+            "type": "integer",
+            "enum": [3600, 300],
+            "title": "Data Point Period Seconds"
+          },
+          "endpoints": {
+            "items": { "$ref": "#/components/schemas/HCEndpoint" },
+            "type": "array",
+            "title": "Endpoints"
+          }
+        },
+        "type": "object",
+        "required": [
+          "region",
+          "region_full_name",
+          "data_point_period_seconds",
+          "endpoints"
+        ],
+        "title": "HCRegion"
+      },
+      "HCSignal": {
+        "properties": {
+          "signal_type": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/V3Signals" },
+              { "$ref": "#/components/schemas/V3HistoricalSignals" },
+              {}
+            ],
+            "title": "Signal Type"
+          },
+          "regions": {
+            "items": { "$ref": "#/components/schemas/HCRegion" },
+            "type": "array",
+            "title": "Regions"
+          }
+        },
+        "type": "object",
+        "required": ["signal_type", "regions"],
+        "title": "HCSignal"
+      },
+      "PYHypercube": {
+        "properties": {
+          "signal_types": {
+            "items": { "$ref": "#/components/schemas/HCSignal" },
+            "type": "array",
+            "title": "Signal Types"
+          }
+        },
+        "type": "object",
+        "required": ["signal_types"],
+        "title": "PYHypercube"
+      },
+      "V3Metadata": {
+        "properties": {
+          "data_point_period_seconds": {
+            "type": "integer",
+            "title": "Data Point Period Seconds"
+          },
+          "region": { "type": "string", "title": "Region" },
+          "signal_type": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/V3Signals" },
+              { "$ref": "#/components/schemas/V3HistoricalSignals" }
+            ],
+            "title": "Signal Type"
+          },
+          "units": { "type": "string", "title": "Units" },
+          "warnings": {
+            "items": { "$ref": "#/components/schemas/WarningType" },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "model": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/V3ModelMetadata" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_point_period_seconds",
+          "region",
+          "signal_type",
+          "units",
+          "warnings"
+        ],
+        "title": "V3Metadata",
+        "example": {
+          "data_point_period_seconds": 300,
+          "model": { "date": "2023-03-01", "type": "binned_regression" },
+          "region": "CAISO_NORTH",
+          "signal_type": "co2_moer",
+          "units": "lbs_co2_per_mwh",
+          "warnings": [
+            { "message": "This is just an example", "type": "EXAMPLE_WARNING" }
+          ]
+        }
+      },
+      "V3Response": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/APIV3DataResponseFormat" },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": { "$ref": "#/components/schemas/V3Metadata" }
+        },
+        "type": "object",
+        "required": ["data", "meta"],
+        "title": "V3Response",
+        "example": {
+          "data": [
+            {
+              "imputed_data_used": true,
+              "last_updated": "2023-10-01T00:00:00Z",
+              "point_time": "2022-07-15T00:00:00Z",
+              "value": 870
+            },
+            {
+              "imputed_data_used": true,
+              "last_updated": "2023-10-01T00:05:00Z",
+              "point_time": "2022-07-15T00:05:00Z",
+              "value": 860
+            }
+          ],
+          "meta": {
+            "data_point_period_seconds": 300,
+            "model": { "date": "2023-03-01", "type": "binned_regression" },
+            "region": "CAISO_NORTH",
+            "signal_type": "co2_moer",
+            "units": "lbs_co2_per_mwh",
+            "warnings": [
+              {
+                "message": "This is just an example",
+                "type": "EXAMPLE_WARNING"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
