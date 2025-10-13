@@ -1,0 +1,44 @@
+{
+  "name": "sustainable-ai-dashboard",
+  "version": "1.0.0",
+  "description": "Sustainable AI Dashboard for carbon-aware AI development",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "nuxt typecheck"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^2.6.5",
+    "@nuxt/eslint-config": "^1.9.0",
+    "@nuxt/test-utils": "^3.19.0",
+    "@nuxt/typescript-build": "^3.0.0",
+    "@types/node": "^24.5.2",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.36.0",
+    "jsdom": "^26.0.0",
+    "nuxt": "4.1.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.8.0",
+    "chart.js": "^4.4.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.545.0",
+    "shadcn-vue": "^2.3.1",
+    "tailwind-merge": "^3.3.1",
+    "vue-chartjs": "^5.3.0",
+    "vue-tsc": "^3.0.8"
+  }
+}
