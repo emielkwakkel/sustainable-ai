@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+
+# Tailwind CSS Guidelines
+
+## Tailwind CSS Guidelines
+- Use utility-first approach
+- Create custom components for reusable UI elements
+- Use Tailwind's responsive design utilities
+- Implement dark/light mode support
+- Use [Nuxt ChadCN](https://nuxt.com/modules/shadcn) ([Docs](https://www.shadcn-vue.com/docs/installation/nuxt))
+- Use semantic color names and consistent spacing
+- Optimize for mobile-first responsive design

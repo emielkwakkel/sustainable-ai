@@ -1,0 +1,8 @@
+# Testing Requirements
+
+## Testing Requirements
+- Write unit tests for utility functions
+- Test API integration with mocked responses
+- Test component rendering and user interactions
+- Use Vitest for testing framework
+- Aim for >80% code coverage on critical paths

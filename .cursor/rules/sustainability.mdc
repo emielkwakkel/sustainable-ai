@@ -1,0 +1,148 @@
+---
+alwaysApply: true
+---
+
+# Weather Dashboard - Sustainability Guidelines
+
+## Project Overview
+This document outlines sustainable coding practices for the Weather Dashboard project to minimize environmental impact, reduce resource consumption, and promote long-term maintainability.
+
+## Core Sustainability Principles
+
+### 1. Energy Efficiency
+- **Optimize API calls**: Minimize unnecessary requests to reduce server load and energy consumption
+- **Implement intelligent caching**: Cache weather data appropriately to reduce API calls
+- **Use efficient algorithms**: Choose algorithms with better time/space complexity
+- **Lazy loading**: Load components and data only when needed
+- **Debounce user inputs**: Prevent excessive API calls during city search
+
+### 2. Resource Optimization
+- **Bundle size optimization**: Keep JavaScript bundles small to reduce download energy
+- **Image optimization**: Use appropriate image formats and sizes
+- **Tree shaking**: Remove unused code from production builds
+- **Code splitting**: Load only necessary code for each route/feature
+- **Minimize dependencies**: Only include essential packages
+
+### 3. Performance Best Practices
+- **Efficient state management**: Use reactive patterns that minimize re-renders
+- **Memoization**: Cache expensive computations and API responses
+- **Virtual scrolling**: For large datasets (if applicable)
+- **Efficient DOM updates**: Minimize DOM manipulations
+- **Use Web Workers**: For CPU-intensive tasks to avoid blocking the main thread
+
+## Sustainable Development Practices
+
+### 1. Code Quality
+- **Write clean, maintainable code**: Reduces debugging time and resource usage
+- **Follow DRY principles**: Avoid code duplication
+- **Use TypeScript**: Catch errors at compile time, reducing runtime issues
+- **Implement proper error handling**: Prevent unnecessary retries and resource waste
+- **Write comprehensive tests**: Reduce debugging and maintenance overhead
+
+### 2. Architecture Decisions
+- **Single Page Application**: Reduces server load and client-side navigation energy
+- **Component-based architecture**: Promotes reusability and reduces code duplication
+- **Efficient state management**: Minimize unnecessary re-renders and computations
+- **Progressive enhancement**: Ensure basic functionality works without JavaScript
+
+### 3. Data Management
+- **Minimize data transfer**: Only fetch necessary weather data fields
+- **Implement pagination**: For large datasets (if applicable)
+- **Use efficient data structures**: Choose appropriate data types and structures
+- **Compress API responses**: Use gzip compression for API calls
+
+## Environmental Considerations
+
+### 1. Server-Side Optimization
+- **Efficient API usage**: Respect rate limits and implement proper error handling
+- **Batch requests**: Combine multiple API calls when possible
+- **Use appropriate timeouts**: Prevent hanging requests
+- **Implement retry logic**: With exponential backoff to avoid overwhelming servers
+
+### 2. Client-Side Optimization
+- **Minimize DOM operations**: Batch DOM updates
+- **Use CSS transforms**: For animations instead of JavaScript
+- **Optimize images**: Use WebP format when supported
+- **Implement service workers**: For offline functionality and caching
+
+### 3. Development Environment
+- **Use efficient development tools**: Choose lightweight alternatives when possible
+- **Optimize build processes**: Use incremental builds
+- **Minimize development dependencies**: Only include necessary dev tools
+- **Use local development**: Reduce cloud resource usage during development
+
+## Monitoring and Metrics
+
+### 1. Performance Metrics
+- **Bundle size monitoring**: Track JavaScript bundle sizes
+- **API call frequency**: Monitor and optimize API usage
+- **Load time metrics**: Track page load and interaction times
+- **Memory usage**: Monitor for memory leaks and excessive usage
+
+### 2. Sustainability Metrics
+- **Carbon footprint**: Estimate energy consumption of the application
+- **Resource efficiency**: Track CPU and memory usage
+- **Network efficiency**: Monitor data transfer and API usage
+- **User experience**: Ensure performance doesn't compromise usability
+
+## Best Practices Checklist
+
+### Development Phase
+- [ ] Use efficient algorithms and data structures
+- [ ] Implement proper caching strategies
+- [ ] Minimize API calls and data transfer
+- [ ] Optimize bundle size and dependencies
+- [ ] Write clean, maintainable code
+- [ ] Implement comprehensive error handling
+- [ ] Use TypeScript for type safety
+
+### Production Phase
+- [ ] Enable compression and minification
+- [ ] Implement proper caching headers
+- [ ] Monitor performance metrics
+- [ ] Optimize images and assets
+- [ ] Use CDN for static assets
+- [ ] Implement proper error monitoring
+- [ ] Regular performance audits
+
+### Maintenance Phase
+- [ ] Regular dependency updates
+- [ ] Performance monitoring and optimization
+- [ ] Code refactoring for efficiency
+- [ ] Remove unused code and dependencies
+- [ ] Update documentation
+- [ ] Regular security updates
+
+## Tools and Resources
+
+### Performance Monitoring
+- **Lighthouse**: For performance audits
+- **WebPageTest**: For detailed performance analysis
+- **Chrome DevTools**: For runtime performance monitoring
+- **Bundle Analyzer**: For bundle size optimization
+
+### Sustainability Tools
+- **Website Carbon Calculator**: Estimate carbon footprint
+- **Green Web Foundation**: Check hosting sustainability
+- **Performance Budget**: Set and monitor performance limits
+- **Resource Hints**: Use preload, prefetch, and preconnect
+
+## Long-term Sustainability
+
+### 1. Maintainability
+- **Documentation**: Keep comprehensive documentation up to date
+- **Code reviews**: Regular code quality reviews
+- **Refactoring**: Regular code refactoring for efficiency
+- **Testing**: Maintain high test coverage
+
+### 2. Scalability
+- **Efficient architecture**: Design for future growth
+- **Modular components**: Easy to extend and modify
+- **Performance monitoring**: Continuous performance tracking
+- **Resource optimization**: Regular optimization reviews
+
+### 3. Environmental Impact
+- **Green hosting**: Consider environmentally friendly hosting options
+- **Efficient algorithms**: Choose algorithms with lower computational complexity
+- **Resource sharing**: Implement efficient resource sharing patterns
+- **Carbon awareness**: Consider environmental impact in technical decisions

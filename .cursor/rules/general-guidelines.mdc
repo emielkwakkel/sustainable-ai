@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+
+# General Guidelines
+
+## Code Style & Standards
+
+### General Guidelines
+- Use TypeScript for type safety
+- Follow Vue.js 4 Composition API patterns
+- Use modern ES6+ features
+- Implement proper error handling
+- Write clean, maintainable, and testable code
+- Follow accessibility guidelines (WCAG 2.1)
+
+### Development Workflow
+- Use conventional commit messages
+- Implement proper error boundaries
+- Use TypeScript strict mode
+- Follow DRY principles
+- Write self-documenting code
+- Use meaningful variable and function names

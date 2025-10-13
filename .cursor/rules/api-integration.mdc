@@ -1,0 +1,156 @@
+# API Integration
+
+## WattTime API Integration
+
+### Overview
+The application integrates with the WattTime API for real-time carbon intensity data. The API specification is defined in `WattTime.openapi.json`.
+
+### Authentication
+- **Registration**: Use `/register` endpoint to create new accounts
+- **Login**: Use `/login` endpoint with HTTP Basic Auth to obtain access tokens
+- **Token Management**: Tokens expire after 30 minutes, store in localStorage
+- **Rate Limits**: 3,000 requests per 5-minute window (10 requests/second average)
+
+### Key Endpoints
+
+#### Authentication Endpoints
+- `POST /register` - Register new user account
+- `GET /login` - Login and obtain access token
+- `GET /password` - Request password reset
+
+#### Data Endpoints
+- `GET /v3/region-from-loc` - Determine grid region from coordinates
+- `GET /v3/forecast` - Get carbon intensity forecasts
+- `GET /v3/historical` - Get historical carbon intensity data
+- `GET /v3/signal-index` - Get current CO2 MOER index
+- `GET /v3/maps` - Get grid region map geometry
+- `GET /v3/my-access` - Get account access information
+
+### Implementation Patterns
+
+#### API Client Setup
+```typescript
+// composables/useWattTime.ts
+export const useWattTime = () => {
+  const token = useLocalStorage('watttime-token', '')
+  
+  const apiCall = async (endpoint: string, params: Record<string, any> = {}) => {
+    const response = await $fetch(`https://api.watttime.org${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${token.value}`
+      },
+      params
+    })
+    return response
+  }
+  
+  return { apiCall }
+}
+```
+
+#### Authentication Flow
+```typescript
+// composables/useWattTimeAuth.ts
+export const useWattTimeAuth = () => {
+  const register = async (userData: RegisterData) => {
+    const response = await $fetch('https://api.watttime.org/register', {
+      method: 'POST',
+      body: userData
+    })
+    return response
+  }
+  
+  const login = async (username: string, password: string) => {
+    const response = await $fetch('https://api.watttime.org/login', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${btoa(`${username}:${password}`)}`
+      }
+    })
+    return response
+  }
+  
+  return { register, login }
+}
+```
+
+#### Data Fetching
+```typescript
+// composables/useCarbonIntensity.ts
+export const useCarbonIntensity = () => {
+  const { apiCall } = useWattTime()
+  
+  const getRegionFromLocation = async (lat: number, lon: number) => {
+    return await apiCall('/v3/region-from-loc', {
+      latitude: lat,
+      longitude: lon,
+      signal_type: 'co2_moer'
+    })
+  }
+  
+  const getForecast = async (region: string, hours: number = 24) => {
+    return await apiCall('/v3/forecast', {
+      region,
+      signal_type: 'co2_moer',
+      horizon_hours: hours
+    })
+  }
+  
+  const getHistorical = async (region: string, start: string, end: string) => {
+    return await apiCall('/v3/historical', {
+      region,
+      signal_type: 'co2_moer',
+      start,
+      end
+    })
+  }
+  
+  return { getRegionFromLocation, getForecast, getHistorical }
+}
+```
+
+### Error Handling
+- Handle 401 errors by refreshing tokens
+- Implement retry logic for rate limit errors (429)
+- Graceful degradation for network failures
+- User-friendly error messages
+
+### Data Types
+```typescript
+interface RegisterData {
+  username: string
+  password: string
+  email: string
+  org?: string
+}
+
+interface LoginResponse {
+  token: string
+}
+
+interface CarbonIntensityData {
+  point_time: string
+  value: number
+  last_updated?: string
+  imputed_data_used?: boolean
+}
+
+interface ForecastResponse {
+  data: CarbonIntensityData[]
+  meta: {
+    region: string
+    signal_type: string
+    units: string
+    data_point_period_seconds: number
+    generated_at_period_seconds: number
+  }
+}
+```
+
+### Best Practices
+- Always check token validity before API calls
+- Implement proper loading states
+- Cache frequently accessed data
+- Handle offline scenarios gracefully
+- Use TypeScript for type safety
+- Implement proper error boundaries

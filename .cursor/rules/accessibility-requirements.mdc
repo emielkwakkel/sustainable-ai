@@ -1,0 +1,9 @@
+# Accessibility Requirements
+
+## Accessibility Requirements
+- Use semantic HTML elements
+- Implement proper ARIA labels
+- Ensure keyboard navigation works
+- Provide alt text for images
+- Use proper color contrast ratios
+- Test with screen readers

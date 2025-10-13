@@ -1,0 +1,29 @@
+---
+alwaysApply: true
+---
+
+# Nuxt.js 4 Guidelines
+
+## Nuxt.js 4 Specific
+- Use `<script setup>` syntax for components
+- Leverage Nuxt's auto-imports for composables
+- Use `useFetch` or `$fetch` for API calls
+- Implement proper SEO with `<Head>` and meta tags
+- Use Nuxt's built-in state management with `useState`
+- Follow Nuxt's directory structure conventions
+
+## Component Structure
+```vue
+<template>
+  <!-- Semantic HTML structure -->
+</template>
+
+<script setup lang="ts">
+// TypeScript interfaces
+// Composables and reactive state
+// Methods and computed properties
+</script>
+
+<style scoped>
+/* Component-specific styles if needed */
+</style>

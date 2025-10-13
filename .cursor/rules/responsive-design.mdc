@@ -1,0 +1,66 @@
+---
+alwaysApply: false
+---
+
+# Responsive Design Guidelines
+
+## Mobile-First Approach
+- Design for mobile devices first, then enhance for larger screens
+- Use Tailwind's responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
+- Test on actual devices and browser dev tools
+- Ensure touch targets are at least 44px for mobile accessibility
+
+## Breakpoint Strategy
+- **Mobile**: Default (320px+)
+- **Small**: `sm:` (640px+)
+- **Medium**: `md:` (768px+)
+- **Large**: `lg:` (1024px+)
+- **Extra Large**: `xl:` (1280px+)
+- **2X Large**: `2xl:` (1536px+)
+
+## Weather Dashboard Specific Layouts
+
+### Mobile Layout (< 768px)
+- Single column layout for weather cards
+- Stack city selector and add city form vertically
+- Use full-width cards with minimal padding
+- Implement horizontal scrolling for 7-day forecast if needed
+- Collapsible navigation and filters
+
+### Tablet Layout (768px - 1024px)
+- Two-column grid for weather cards
+- Side-by-side city selector and add city form
+- Moderate padding and spacing
+- Show 3-4 days per row in forecast
+
+### Desktop Layout (> 1024px)
+- Multi-column grid (3-4 weather cards per row)
+- Horizontal layout for controls
+- Generous padding and spacing
+- Show all 7 days in a single row
+- Sidebar for additional features
+
+## Typography Scaling
+- Use responsive text sizes: `text-sm md:text-base lg:text-lg`
+- Maintain readable line heights across devices
+- Ensure text remains legible on small screens
+- Use appropriate font weights for different screen sizes
+
+## Touch and Interaction
+- Minimum 44px touch targets for mobile
+- Adequate spacing between interactive elements
+- Swipe gestures for forecast navigation
+- Hover states for desktop, active states for mobile
+
+## Performance Considerations
+- Optimize images for different screen densities
+- Use responsive images with `srcset`
+- Lazy load images below the fold
+- Minimize layout shifts during responsive changes
+
+## Testing Checklist
+- [ ] Verify landscape and portrait orientations
+- [ ] Check touch interactions work properly
+- [ ] Ensure text remains readable at all sizes
+- [ ] Validate navigation works on all screen sizes
+- [ ] Verify no horizontal scrolling on mobile

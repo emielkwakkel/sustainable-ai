@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+
+# Performance Considerations
+
+## Performance Considerations
+- Implement lazy loading for components
+- Optimize images and assets
+- Use Nuxt's built-in performance optimizations
+- Implement proper caching strategies
+- Minimize bundle size
