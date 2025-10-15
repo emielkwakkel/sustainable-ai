@@ -21,6 +21,24 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Username
+            </label>
+            <input 
+              v-model="registrationForm.username"
+              type="text" 
+              placeholder="Enter your username"
+              :class="[
+                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                registrationErrors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+              ]"
+            />
+            <p v-if="registrationErrors.username" class="text-red-500 text-sm mt-1">
+              {{ registrationErrors.username }}
+            </p>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Email Address
             </label>
             <input 
@@ -36,7 +54,9 @@
               {{ registrationErrors.email }}
             </p>
           </div>
-          
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Password
@@ -53,6 +73,18 @@
             <p v-if="registrationErrors.password" class="text-red-500 text-sm mt-1">
               {{ registrationErrors.password }}
             </p>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Organization (Optional)
+            </label>
+            <input 
+              v-model="registrationForm.org"
+              type="text" 
+              placeholder="Enter your organization"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
         </div>
         
@@ -93,19 +125,19 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email Address
+              Username
             </label>
             <input 
-              v-model="loginForm.email"
-              type="email" 
-              placeholder="Enter your email"
+              v-model="loginForm.username"
+              type="text" 
+              placeholder="Enter your username"
               :class="[
                 'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                loginErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                loginErrors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
               ]"
             />
-            <p v-if="loginErrors.email" class="text-red-500 text-sm mt-1">
-              {{ loginErrors.email }}
+            <p v-if="loginErrors.username" class="text-red-500 text-sm mt-1">
+              {{ loginErrors.username }}
             </p>
           </div>
           
@@ -268,12 +300,14 @@ const { preferences, updatePreference } = useAppPreferences()
 
 // Form state
 const registrationForm = ref<WattTimeRegistrationRequest>({
+  username: '',
   email: '',
-  password: ''
+  password: '',
+  org: ''
 })
 
 const loginForm = ref<WattTimeLoginRequest>({
-  email: '',
+  username: '',
   password: ''
 })
 
@@ -299,7 +333,12 @@ const handleRegistration = async () => {
   registrationErrors.value = {}
   
   // Validate form
-  const validation = validateRegistrationForm(registrationForm.value.email, registrationForm.value.password)
+  const validation = validateRegistrationForm(
+    registrationForm.value.username, 
+    registrationForm.value.email, 
+    registrationForm.value.password, 
+    registrationForm.value.org
+  )
   if (!validation.isValid) {
     validation.errors.forEach(error => {
       registrationErrors.value[error.field] = error.message
@@ -316,7 +355,7 @@ const handleRegistration = async () => {
       registrationSuccess.value = true
       registrationMessage.value = 'Account registered successfully! You can now connect to WattTime.'
       // Clear form
-      registrationForm.value = { email: '', password: '' }
+      registrationForm.value = { username: '', email: '', password: '', org: '' }
     } else {
       registrationSuccess.value = false
       registrationMessage.value = result.error || 'Registration failed. Please try again.'
@@ -336,7 +375,7 @@ const handleLogin = async () => {
   loginErrors.value = {}
   
   // Validate form
-  const validation = validateLoginForm(loginForm.value.email, loginForm.value.password)
+  const validation = validateLoginForm(loginForm.value.username, loginForm.value.password)
   if (!validation.isValid) {
     validation.errors.forEach(error => {
       loginErrors.value[error.field] = error.message
@@ -353,7 +392,7 @@ const handleLogin = async () => {
       loginSuccess.value = true
       loginMessage.value = 'Successfully connected to WattTime!'
       // Clear form
-      loginForm.value = { email: '', password: '' }
+      loginForm.value = { username: '', password: '' }
       // Update connection status
       await checkConnectionStatus()
     } else {

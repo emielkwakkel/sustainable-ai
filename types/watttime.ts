@@ -1,7 +1,9 @@
 // WattTime API Types
 export interface WattTimeRegistrationRequest {
-  email: string
+  username: string
   password: string
+  email: string
+  org?: string
 }
 
 export interface WattTimeRegistrationResponse {
@@ -11,16 +13,17 @@ export interface WattTimeRegistrationResponse {
 }
 
 export interface WattTimeLoginRequest {
-  email: string
+  username: string
   password: string
 }
 
 export interface WattTimeLoginResponse {
-  success: boolean
+  success?: boolean
   token?: string
   expires?: string
   message?: string
   error?: string
+  status?: number
 }
 
 export interface WattTimeTokenInfo {

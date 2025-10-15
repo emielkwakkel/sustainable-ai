@@ -13,11 +13,8 @@ export const useWattTimeApi = () => {
   // Registration function
   const register = async (request: WattTimeRegistrationRequest): Promise<ApiResponse<WattTimeRegistrationResponse>> => {
     try {
-      const response = await $fetch<WattTimeRegistrationResponse>(`${config.public.wattTimeApiUrl}/register`, {
+      const response = await $fetch<WattTimeRegistrationResponse>('/api/watttime/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: request
       })
 
@@ -39,17 +36,28 @@ export const useWattTimeApi = () => {
   // Login function
   const login = async (request: WattTimeLoginRequest): Promise<ApiResponse<WattTimeLoginResponse>> => {
     try {
-      const response = await $fetch<WattTimeLoginResponse>(`${config.public.wattTimeApiUrl}/login`, {
+      console.log('Attempting WattTime login for user:', request.username)
+      
+      const response = await $fetch<WattTimeLoginResponse>('/api/watttime/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: request
       })
 
+      console.log('WattTime login response:', response)
+
+      // Check if the response indicates failure
+      if (response && response.success === false) {
+        return {
+          success: false,
+          error: response.error || 'Login failed. Please check your credentials.',
+          status: (response as any).status || 401
+        }
+      }
+
       // Store token if login successful
-      if (response.success && response.token && response.expires) {
+      if (response && response.token && response.expires) {
         storeToken(response.token, response.expires)
+        console.log('Token stored successfully')
       }
 
       return {
@@ -58,6 +66,8 @@ export const useWattTimeApi = () => {
       }
     } catch (error: any) {
       console.error('WattTime login error:', error)
+      console.error('Error status:', error.status)
+      console.error('Error data:', error.data)
       
       return {
         success: false,
@@ -66,6 +76,7 @@ export const useWattTimeApi = () => {
       }
     }
   }
+  
 
   // Test connection with existing token
   const testConnection = async (): Promise<ApiResponse<{ connected: boolean }>> => {
@@ -81,19 +92,15 @@ export const useWattTimeApi = () => {
     }
 
     try {
-      // Test the connection by making a simple API call
-      // This would be a lightweight endpoint to verify the token
-      const response = await $fetch(`${config.public.wattTimeApiUrl}/v2/ba`, {
+      // Test the connection using server-side proxy
+      const response = await $fetch('/api/watttime/test-connection', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${tokenInfo.token}`,
-          'Content-Type': 'application/json',
-        }
+        query: { token: tokenInfo.token }
       })
 
       return {
         success: true,
-        data: { connected: true }
+        data: { connected: response.connected }
       }
     } catch (error: any) {
       console.error('WattTime connection test error:', error)

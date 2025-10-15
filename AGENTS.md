@@ -60,7 +60,9 @@
 ├── types/              # TypeScript type definitions
 ├── utils/              # Utility functions
 ├── assets/             # Static assets
-└── public/             # Public assets
+├── public/             # Public assets
+├── certs/              # SSL certificates for HTTPS development (gitignored)
+└── server/             # Nuxt server API routes
 ```
 
 ## Development Guidelines
@@ -86,6 +88,13 @@
 - Optimize images and assets
 - Use Nuxt's built-in performance features
 
+### HTTPS Development Setup
+- **SSL Certificates**: Self-signed certificates for localhost HTTPS development
+- **Certificate Generation**: Use `npm run setup:certificates` to generate certificates
+- **Development Server**: Use `npm run dev:https` for HTTPS development
+- **Security Note**: Certificates are gitignored and regenerated for each environment
+- **Browser Warning**: Self-signed certificates will show security warnings (normal for development)
+
 ### Testing Strategy
 - Unit tests for utility functions and composables
 - Component tests for user interactions
@@ -107,7 +116,8 @@
 2. Install and configure Tailwind CSS and Nuxt ChadCN components
 3. Set up testing framework (Vitest)
 4. Create basic project structure
-5. Implement API integration layer
+5. Generate SSL certificates for HTTPS development
+6. Implement API integration layer
 
 ### Application roadmap
 This Roadmap is prioritised.

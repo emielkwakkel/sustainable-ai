@@ -37,12 +37,23 @@ A modern dashboard built with Nuxt.js 4 and Tailwind CSS for carbon-aware AI dev
    npm install
    ```
 
-3. Start the development server:
+3. Generate SSL certificates for HTTPS development:
    ```bash
-   npm run dev
+   npm run setup:certificates
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Start the development server:
+   ```bash
+   # For HTTP development
+   npm run dev
+   
+   # For HTTPS development (recommended for WattTime API)
+   npm run dev:https
+   ```
+
+5. Open [https://localhost:3000](https://localhost:3000) in your browser
+   - **Note**: You'll see a security warning for the self-signed certificate - this is normal for development
+   - Click "Advanced" → "Proceed to localhost" to continue
 
 ## Implementation Status
 
@@ -75,13 +86,43 @@ A modern dashboard built with Nuxt.js 4 and Tailwind CSS for carbon-aware AI dev
 
 ### Available Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server (HTTP)
+- `npm run dev:https` - Start development server (HTTPS) - **Recommended for WattTime API**
+- `npm run setup:certificates` - Generate SSL certificates for HTTPS development
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run test` - Run tests
 - `npm run test:coverage` - Run tests with coverage
 - `npm run lint` - Run ESLint
 - `npm run typecheck` - Run TypeScript type checking
+
+## HTTPS Development
+
+This project requires HTTPS for proper WattTime API integration due to SSL certificate requirements. The development setup includes:
+
+### SSL Certificates
+- **Self-signed certificates** for localhost HTTPS development
+- **Automatic generation** via `npm run setup:certificates`
+- **Gitignored** for security (regenerated per environment)
+- **Browser warnings** are normal for self-signed certificates
+
+### Development Commands
+```bash
+# Generate SSL certificates (run once after cloning)
+npm run setup:certificates
+
+# Start HTTPS development server (recommended)
+npm run dev:https
+
+# Start HTTP development server (limited API functionality)
+npm run dev
+```
+
+### Browser Security Warning
+When accessing `https://localhost:3000`, you'll see a security warning. This is expected for self-signed certificates:
+1. Click "Advanced" or "Show Details"
+2. Click "Proceed to localhost (unsafe)" or "Continue to this website"
+3. The application will work normally
 
 ## API Integration
 
@@ -101,6 +142,8 @@ The dashboard integrates with multiple APIs for carbon intensity data:
 ├── utils/              # Utility functions (form validation, helpers)
 ├── assets/             # Static assets and CSS
 ├── public/             # Public assets
+├── certs/              # SSL certificates for HTTPS development (gitignored)
+├── server/             # Nuxt server API routes (WattTime proxy)
 ├── test/               # Test files and setup
 ├── .cursor/            # Cursor AI rules and guidelines
 └── AGENTS.md          # Agent guidelines and project documentation

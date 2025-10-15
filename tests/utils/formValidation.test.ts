@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { 
   validateEmail, 
   validatePassword, 
+  validateUsername,
   validateRegistrationForm, 
   validateLoginForm 
 } from '~/utils/formValidation'
@@ -61,50 +62,88 @@ describe('formValidation', () => {
     })
   })
 
+  describe('validateUsername', () => {
+    it('should return error for empty username', () => {
+      const result = validateUsername('')
+      expect(result).toEqual({
+        field: 'username',
+        message: 'Username is required'
+      })
+    })
+
+    it('should return error for username too short', () => {
+      const result = validateUsername('ab')
+      expect(result).toEqual({
+        field: 'username',
+        message: 'Username must be at least 3 characters long'
+      })
+    })
+
+    it('should return error for username with invalid characters', () => {
+      const result = validateUsername('user@name')
+      expect(result).toEqual({
+        field: 'username',
+        message: 'Username can only contain letters, numbers, underscores, and hyphens'
+      })
+    })
+
+    it('should return null for valid username', () => {
+      const result = validateUsername('testuser')
+      expect(result).toBeNull()
+    })
+  })
+
   describe('validateRegistrationForm', () => {
     it('should return valid for correct registration data', () => {
-      const result = validateRegistrationForm('test@example.com', 'Password123!')
+      const result = validateRegistrationForm('testuser', 'test@example.com', 'Password123!')
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
     })
 
+    it('should return invalid for incorrect username', () => {
+      const result = validateRegistrationForm('ab', 'test@example.com', 'Password123!')
+      expect(result.isValid).toBe(false)
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0]?.field).toBe('username')
+    })
+
     it('should return invalid for incorrect email', () => {
-      const result = validateRegistrationForm('invalid-email', 'Password123!')
+      const result = validateRegistrationForm('testuser', 'invalid-email', 'Password123!')
       expect(result.isValid).toBe(false)
       expect(result.errors).toHaveLength(1)
       expect(result.errors[0]?.field).toBe('email')
     })
 
     it('should return invalid for weak password', () => {
-      const result = validateRegistrationForm('test@example.com', 'weak')
+      const result = validateRegistrationForm('testuser', 'test@example.com', 'weak')
       expect(result.isValid).toBe(false)
       expect(result.errors).toHaveLength(1)
       expect(result.errors[0]?.field).toBe('password')
     })
 
-    it('should return invalid for both email and password errors', () => {
-      const result = validateRegistrationForm('invalid-email', 'weak')
+    it('should return invalid for multiple errors', () => {
+      const result = validateRegistrationForm('ab', 'invalid-email', 'weak')
       expect(result.isValid).toBe(false)
-      expect(result.errors).toHaveLength(2)
+      expect(result.errors).toHaveLength(3)
     })
   })
 
   describe('validateLoginForm', () => {
     it('should return valid for correct login data', () => {
-      const result = validateLoginForm('test@example.com', 'password123')
+      const result = validateLoginForm('testuser', 'password123')
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
     })
 
-    it('should return invalid for empty email', () => {
+    it('should return invalid for empty username', () => {
       const result = validateLoginForm('', 'password123')
       expect(result.isValid).toBe(false)
       expect(result.errors).toHaveLength(1)
-      expect(result.errors[0]?.field).toBe('email')
+      expect(result.errors[0]?.field).toBe('username')
     })
 
     it('should return invalid for empty password', () => {
-      const result = validateLoginForm('test@example.com', '')
+      const result = validateLoginForm('testuser', '')
       expect(result.isValid).toBe(false)
       expect(result.errors).toHaveLength(1)
       expect(result.errors[0]?.field).toBe('password')

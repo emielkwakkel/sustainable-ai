@@ -38,8 +38,27 @@ export const validatePassword = (password: string): FormFieldError | null => {
   return null
 }
 
-export const validateRegistrationForm = (email: string, password: string): FormValidationResult => {
+export const validateUsername = (username: string): FormFieldError | null => {
+  if (!username.trim()) {
+    return { field: 'username', message: 'Username is required' }
+  }
+  
+  if (username.length < 3) {
+    return { field: 'username', message: 'Username must be at least 3 characters long' }
+  }
+  
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return { field: 'username', message: 'Username can only contain letters, numbers, underscores, and hyphens' }
+  }
+  
+  return null
+}
+
+export const validateRegistrationForm = (username: string, email: string, password: string, org?: string): FormValidationResult => {
   const errors: FormFieldError[] = []
+  
+  const usernameError = validateUsername(username)
+  if (usernameError) errors.push(usernameError)
   
   const emailError = validateEmail(email)
   if (emailError) errors.push(emailError)
@@ -53,11 +72,11 @@ export const validateRegistrationForm = (email: string, password: string): FormV
   }
 }
 
-export const validateLoginForm = (email: string, password: string): FormValidationResult => {
+export const validateLoginForm = (username: string, password: string): FormValidationResult => {
   const errors: FormFieldError[] = []
   
-  if (!email.trim()) {
-    errors.push({ field: 'email', message: 'Email is required' })
+  if (!username.trim()) {
+    errors.push({ field: 'username', message: 'Username is required' })
   }
   
   if (!password) {
