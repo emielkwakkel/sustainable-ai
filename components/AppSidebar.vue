@@ -114,14 +114,14 @@ const isActive = (href: string) => {
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
   // Persist state to localStorage
-  if (process.client) {
+  if (import.meta.client) {
     localStorage.setItem('sidebar-collapsed', isCollapsed.value.toString())
   }
 }
 
 // Check for mobile screen size
 const checkMobile = () => {
-  if (process.client) {
+  if (import.meta.client) {
     isMobile.value = window.innerWidth < 1024
     if (isMobile.value) {
       isCollapsed.value = true
@@ -131,7 +131,7 @@ const checkMobile = () => {
 
 // Initialize sidebar state from localStorage
 onMounted(() => {
-  if (process.client) {
+  if (import.meta.client) {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved !== null) {
       isCollapsed.value = saved === 'true'
@@ -143,7 +143,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (process.client) {
+  if (import.meta.client) {
     window.removeEventListener('resize', checkMobile)
   }
 })

@@ -28,8 +28,8 @@ vi.mock('~/composables/useTokenManager', () => ({
   })
 }))
 
-// Mock process.client
-Object.defineProperty(process, 'client', {
+// Mock import.meta.client
+Object.defineProperty(import.meta, 'client', {
   value: true,
   writable: true
 })

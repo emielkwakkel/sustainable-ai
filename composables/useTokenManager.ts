@@ -12,7 +12,7 @@ export const useTokenManager = () => {
 
   // Check if token exists and is valid
   const isTokenValid = (): boolean => {
-    if (process.client) {
+    if (import.meta.client) {
       const token = localStorage.getItem(TOKEN_STORAGE_KEY)
       const expires = localStorage.getItem(TOKEN_EXPIRY_STORAGE_KEY)
       
@@ -30,7 +30,7 @@ export const useTokenManager = () => {
 
   // Get stored token info
   const getTokenInfo = (): WattTimeTokenInfo | null => {
-    if (process.client && isTokenValid()) {
+    if (import.meta.client && isTokenValid()) {
       const token = localStorage.getItem(TOKEN_STORAGE_KEY)
       const expires = localStorage.getItem(TOKEN_EXPIRY_STORAGE_KEY)
       
@@ -47,7 +47,7 @@ export const useTokenManager = () => {
 
   // Store token securely
   const storeToken = (token: string, expires: string): void => {
-    if (process.client) {
+    if (import.meta.client) {
       localStorage.setItem(TOKEN_STORAGE_KEY, token)
       localStorage.setItem(TOKEN_EXPIRY_STORAGE_KEY, expires)
       
@@ -63,7 +63,7 @@ export const useTokenManager = () => {
 
   // Remove token (logout)
   const removeToken = (): void => {
-    if (process.client) {
+    if (import.meta.client) {
       localStorage.removeItem(TOKEN_STORAGE_KEY)
       localStorage.removeItem(TOKEN_EXPIRY_STORAGE_KEY)
       
@@ -97,7 +97,7 @@ export const useTokenManager = () => {
   }
 
   // Initialize connection status on composable creation
-  if (process.client) {
+  if (import.meta.client) {
     checkConnectionStatus()
   }
 
