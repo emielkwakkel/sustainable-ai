@@ -12,7 +12,7 @@ const defaultPreferences: AppPreferences = {
 export const useAppPreferences = () => {
   // Initialize preferences from localStorage or defaults
   const getStoredPreferences = (): AppPreferences => {
-    if (process.client) {
+    if (import.meta.client) {
       const stored = localStorage.getItem(PREFERENCES_STORAGE_KEY)
       if (stored) {
         try {
@@ -34,7 +34,7 @@ export const useAppPreferences = () => {
     const updatedPreferences = { ...preferences.value, ...newPreferences }
     preferences.value = updatedPreferences
     
-    if (process.client) {
+    if (import.meta.client) {
       localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(updatedPreferences))
     }
   }
@@ -50,7 +50,7 @@ export const useAppPreferences = () => {
   // Reset to default preferences
   const resetPreferences = (): void => {
     preferences.value = defaultPreferences
-    if (process.client) {
+    if (import.meta.client) {
       localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(defaultPreferences))
     }
   }
@@ -63,7 +63,7 @@ export const useAppPreferences = () => {
   // Watch for changes and apply them
   watch(preferences, (newPreferences) => {
     // Apply dark mode
-    if (process.client) {
+    if (import.meta.client) {
       const html = document.documentElement
       if (newPreferences.darkMode) {
         html.classList.add('dark')

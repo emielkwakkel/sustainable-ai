@@ -40,6 +40,9 @@
 import { Menu } from 'lucide-vue-next'
 import { cn } from '~/utils/cn'
 
+// Initialize app preferences to ensure theme is applied
+const { preferences } = useAppPreferences()
+
 const isCollapsed = useState('sidebar-collapsed', () => false)
 const isMobile = useState('is-mobile', () => false)
 

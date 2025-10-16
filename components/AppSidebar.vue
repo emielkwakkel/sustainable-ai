@@ -31,11 +31,14 @@
           <NuxtLink
             :to="item.href"
             :class="cn(
-              'flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors',
+              'flex items-center rounded-lg transition-colors',
+              isCollapsed ? 'justify-center px-3 py-2' : 'space-x-3 px-3 py-2',
               'hover:bg-gray-100 dark:hover:bg-gray-800',
               'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
               'dark:focus:ring-offset-gray-900',
-              isActive(item.href) && 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+              isActive(item.href) 
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' 
+                : 'text-gray-700 dark:text-gray-300'
             )"
             :aria-current="isActive(item.href) ? 'page' : undefined"
           >
@@ -65,6 +68,9 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, BarChart3, Calculator, Settings } from 'lucide-vue-next'
 import { cn } from '~/utils/cn'
+
+// Initialize app preferences to ensure theme is applied
+const { preferences } = useAppPreferences()
 
 interface MenuItem {
   name: string
