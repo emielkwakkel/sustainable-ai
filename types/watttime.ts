@@ -125,3 +125,62 @@ export interface AvailableRegion {
   name: string
   description?: string
 }
+
+// Token Calculator Types
+export interface AIModel {
+  id: string
+  name: string
+  parameters: number // in billions
+  contextLength: number
+  contextWindow: number
+  energyPerToken: number // joules per token
+  carbonPerToken: number // grams CO₂ per token
+}
+
+export interface HardwareConfig {
+  id: string
+  name: string
+  powerConsumption: number // watts
+  tokensPerSecond: number
+  efficiency: number // tokens per watt
+}
+
+export interface DataCenterConfig {
+  id: string
+  name: string
+  region: string
+  pue: number // Power Usage Effectiveness
+  carbonIntensity: number // kg CO₂/kWh
+}
+
+export interface TokenCalculatorState {
+  model: string
+  tokenCount: number
+  contextLength: number
+  contextWindow: number
+  hardware: string
+  dataCenter: string
+  pue: number
+  carbonIntensity: number
+}
+
+export interface CalculationResult {
+  energyJoules: number
+  energyKWh: number
+  carbonEmissionsGrams: number
+  totalEmissionsGrams: number
+  equivalentLightbulbMinutes: number
+  equivalentCarMiles: number
+  equivalentTreeHours: number
+}
+
+export interface TokenCalculatorFormData {
+  tokenCount: number
+  model: string
+  contextLength: number
+  contextWindow: number
+  hardware: string
+  dataCenter: string
+  customPue?: number
+  customCarbonIntensity?: number
+}
