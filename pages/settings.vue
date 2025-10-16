@@ -294,7 +294,7 @@ useHead({
 })
 
 // Composables
-const { register, login, testConnection } = useWattTimeApi()
+const { register, login } = useWattTimeApi()
 const { connectionStatus, checkConnectionStatus, removeToken } = useTokenManager()
 const { preferences, updatePreference } = useAppPreferences()
 

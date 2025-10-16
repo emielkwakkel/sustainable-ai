@@ -52,6 +52,7 @@
             <div>
               <label for="contextLength" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Context Length (tokens)
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">(auto-set from model, can be overridden)</span>
               </label>
               <input
                 id="contextLength"
@@ -67,6 +68,7 @@
             <div>
               <label for="contextWindow" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Context Window (tokens)
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">(auto-set from model, can be overridden)</span>
               </label>
               <input
                 id="contextWindow"
@@ -344,6 +346,15 @@ const exportResults = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
+
+// Auto-update context fields when model changes
+watch(() => formData.value.model, (newModel) => {
+  const selectedModel = aiModels.find(model => model.id === newModel)
+  if (selectedModel) {
+    formData.value.contextLength = selectedModel.contextLength
+    formData.value.contextWindow = selectedModel.contextWindow
+  }
+})
 
 // Auto-calculate when form data changes
 watch(formData, () => {

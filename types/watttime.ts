@@ -133,8 +133,7 @@ export interface AIModel {
   parameters: number // in billions
   contextLength: number
   contextWindow: number
-  energyPerToken: number // joules per token
-  carbonPerToken: number // grams CO₂ per token
+  complexityFactor: number // relative to GPT-3 (1.0 = GPT-3 baseline)
 }
 
 export interface HardwareConfig {
@@ -183,4 +182,27 @@ export interface TokenCalculatorFormData {
   dataCenter: string
   customPue?: number
   customCarbonIntensity?: number
+}
+
+// Preset Types
+export interface TokenCalculatorPreset {
+  id: string
+  name: string
+  isDefault: boolean
+  description?: string
+  configuration: TokenCalculatorFormData
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PresetManager {
+  presets: TokenCalculatorPreset[]
+  defaultPresets: TokenCalculatorPreset[]
+  customPresets: TokenCalculatorPreset[]
+  savePreset: (name: string, description: string, configuration: TokenCalculatorFormData) => string
+  loadPreset: (id: string) => TokenCalculatorFormData | null
+  deletePreset: (id: string) => boolean
+  updatePreset: (id: string, name: string, description: string, configuration: TokenCalculatorFormData) => boolean
+  exportPresets: () => string
+  importPresets: (data: string) => boolean
 }

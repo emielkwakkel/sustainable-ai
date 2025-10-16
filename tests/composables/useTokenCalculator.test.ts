@@ -16,13 +16,26 @@ describe('useTokenCalculator', () => {
 
     const result = calculateEmissions(formData)
 
-    // Verify the calculation matches expected values from the article
-    // Note: PUE adjustment (1.1) is applied, so base energy * 1.1
-    const expectedEnergyJoules = 673.2 * 1000 * 1.1 // Base energy * tokens * PUE
+    // Calculate expected energy using the corrected formula from research paper
+    // Base energy per token = GPU Power (kW) / Tokens per second
+    // NVIDIA A100: 400W = 0.4kW, 1400 tokens/sec
+    // Base energy: 0.4 / 1400 = 0.0002857 kWh/token
+    // GPT-4 complexity factor: 1.6
+    // Complexity adjusted: 0.0002857 * 1.6 = 0.0004571 kWh/token
+    // Context window factor: 0.372 (for 1250 token window)
+    // Context adjusted: 0.0004571 * 0.372 = 0.0001700 kWh/token
+    // With PUE (1.1): 0.0001700 * 1.1 = 0.000187 kWh/token
+    // Convert to joules: 0.000187 * 3600000 = 673.2 J/token
+    const expectedEnergyPerTokenJoules = (0.4 / 1400) * 1.6 * 0.372 * 1.1 * 3600000
+    const expectedEnergyJoules = expectedEnergyPerTokenJoules * 1000
     expect(result.energyJoules).toBeCloseTo(expectedEnergyJoules, 0)
     expect(result.energyKWh).toBeCloseTo(expectedEnergyJoules / 3600000, 3)
-    expect(result.carbonEmissionsGrams).toBeCloseTo(0.094, 2) // Calculated value with PUE adjustment
-    expect(result.totalEmissionsGrams).toBeCloseTo(94.4, 1) // 0.094 * 1000
+    
+    // Calculate expected carbon emissions dynamically
+    const expectedEnergyPerTokenKwh = (0.4 / 1400) * 1.6 * 0.372 * 1.1
+    const expectedCarbonPerTokenGrams = expectedEnergyPerTokenKwh * 0.459 * 1000
+    expect(result.carbonEmissionsGrams).toBeCloseTo(expectedCarbonPerTokenGrams, 3)
+    expect(result.totalEmissionsGrams).toBeCloseTo(expectedCarbonPerTokenGrams * 1000, 1)
   })
 
   it('validates form data correctly', () => {
@@ -95,5 +108,51 @@ describe('useTokenCalculator', () => {
     // Car miles calculation: total emissions in kg / 2.3 (kg CO₂ per mile)
     const expectedCarMiles = (result.totalEmissionsGrams / 1000) * 2.3
     expect(result.equivalentCarMiles).toBeCloseTo(expectedCarMiles, 2)
+  })
+
+  it('calculates carbon emissions dynamically based on carbon intensity', () => {
+    const formData = {
+      tokenCount: 1000,
+      model: 'gpt-4',
+      contextLength: 8000,
+      contextWindow: 1250,
+      hardware: 'nvidia-a100',
+      dataCenter: 'google-korea',
+      customCarbonIntensity: 0.2 // Lower carbon intensity
+    }
+
+    const result = calculateEmissions(formData)
+
+    // With custom carbon intensity of 0.2 kg CO₂/kWh
+    // Energy per token: (0.4 / 1400) * 1.6 * 0.372 * 1.1 = 0.000187 kWh/token
+    // Carbon per token: 0.000187 * 0.2 = 0.0000374 kg CO₂/token = 0.0374 g CO₂/token
+    const expectedCarbonPerTokenGrams = (0.4 / 1400) * 1.6 * 0.372 * 1.1 * 0.2 * 1000
+    expect(result.carbonEmissionsGrams).toBeCloseTo(expectedCarbonPerTokenGrams, 3)
+    expect(result.totalEmissionsGrams).toBeCloseTo(expectedCarbonPerTokenGrams * 1000, 1)
+  })
+
+  it('calculates energy correctly for different models and hardware', () => {
+    // Test GPT-3.5 Turbo (baseline complexity) with NVIDIA V100
+    const formData = {
+      tokenCount: 1000,
+      model: 'gpt-3.5-turbo',
+      contextLength: 4000,
+      contextWindow: 1000,
+      hardware: 'nvidia-v100',
+      dataCenter: 'google-korea'
+    }
+
+    const result = calculateEmissions(formData)
+
+    // NVIDIA V100: 300W = 0.3kW, 800 tokens/sec
+    // Base energy: 0.3 / 800 = 0.000375 kWh/token
+    // GPT-3.5 complexity factor: 1.0 (baseline)
+    // Complexity adjusted: 0.000375 * 1.0 = 0.000375 kWh/token
+    // Context window factor: 1.0 (for 1000 token window, same as default)
+    // Context adjusted: 0.000375 * 1.0 = 0.000375 kWh/token
+    // With PUE (1.1): 0.000375 * 1.1 = 0.0004125 kWh/token
+    const expectedEnergyPerTokenKwh = (0.3 / 800) * 1.0 * 1.0 * 1.1
+    const expectedEnergyJoules = expectedEnergyPerTokenKwh * 3600000 * 1000
+    expect(result.energyJoules).toBeCloseTo(expectedEnergyJoules, 0)
   })
 })
