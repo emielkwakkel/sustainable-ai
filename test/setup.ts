@@ -7,7 +7,25 @@ vi.mock('#app', () => ({
       wattTimeApiUrl: 'https://api.watttime.org'
     }
   }),
-  $fetch: vi.fn()
+  $fetch: vi.fn(),
+  useHead: vi.fn(),
+  useState: vi.fn(() => ref(false)),
+  ref: vi.fn((val) => ({ value: val })),
+  computed: vi.fn((fn) => ({ value: fn() })),
+  watch: vi.fn(),
+  onMounted: vi.fn(),
+  onUnmounted: vi.fn()
+}))
+
+// Mock useTokenManager
+vi.mock('~/composables/useTokenManager', () => ({
+  useTokenManager: () => ({
+    getTokenInfo: vi.fn(() => ({
+      token: 'test-token',
+      isValid: true
+    })),
+    connectionStatus: ref({ connected: true })
+  })
 }))
 
 // Mock process.client

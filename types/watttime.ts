@@ -65,3 +65,63 @@ export interface ApiResponse<T> {
   success: boolean
   status?: number
 }
+
+// Carbon intensity data types
+export interface CarbonIntensityData {
+  point_time: string
+  value: number
+}
+
+export interface SignalIndexResponse {
+  data: CarbonIntensityData[]
+  meta: {
+    region: string
+    signal_type: string
+    units: string
+    data_point_period_seconds: number
+    model?: {
+      date: string
+      type: string
+    }
+    warnings?: string[]
+  }
+}
+
+export interface ForecastResponse {
+  data: CarbonIntensityData[]
+  meta: {
+    region: string
+    signal_type: string
+    units: string
+    data_point_period_seconds: number
+    generated_at_period_seconds: number
+  }
+}
+
+export interface RegionData {
+  region: string
+  name: string
+  moer?: number
+  aoer?: number
+  lastUpdated?: string
+  isLoading?: boolean
+  error?: string
+}
+
+export interface DashboardRegion {
+  id: string
+  region: string
+  name: string
+  moer?: number
+  aoer?: number
+  lastUpdated?: string
+  isLoading?: boolean
+  error?: string
+}
+
+// Available regions for selection
+export interface AvailableRegion {
+  code: string
+  name: string
+  description?: string
+}
