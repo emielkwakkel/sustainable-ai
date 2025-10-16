@@ -1,4 +1,5 @@
 ---
+description: Responsive design used in html
 alwaysApply: false
 ---
 # Responsive Design Guidelines
@@ -62,4 +63,3 @@ alwaysApply: false
 - [ ] Check touch interactions work properly
 - [ ] Ensure text remains readable at all sizes
 - [ ] Validate navigation works on all screen sizes
-- [ ] Verify no horizontal scrolling on mobile

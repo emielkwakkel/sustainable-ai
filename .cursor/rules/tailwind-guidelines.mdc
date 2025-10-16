@@ -1,7 +1,7 @@
 ---
-alwaysApply: true
+description: When styling the application using Tailwind in html files
+alwaysApply: false
 ---
-
 # Tailwind CSS Guidelines
 
 ## Tailwind CSS Guidelines
