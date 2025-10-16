@@ -119,6 +119,13 @@ export const useTokenCalculator = () => {
       region: 'North America',
       pue: 1.1,
       carbonIntensity: 0.200
+    },
+    {
+      id: 'azure-us',
+      name: 'Azure US',
+      region: 'North America',
+      pue: 1.2,
+      carbonIntensity: 0.415
     }
   ]
 

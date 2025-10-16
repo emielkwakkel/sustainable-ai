@@ -1,3 +1,5 @@
+import type { Ref, ComputedRef } from 'vue'
+
 // WattTime API Types
 export interface WattTimeRegistrationRequest {
   username: string
@@ -196,9 +198,9 @@ export interface TokenCalculatorPreset {
 }
 
 export interface PresetManager {
-  presets: TokenCalculatorPreset[]
-  defaultPresets: TokenCalculatorPreset[]
-  customPresets: TokenCalculatorPreset[]
+  presets: Ref<TokenCalculatorPreset[]>
+  defaultPresets: ComputedRef<TokenCalculatorPreset[]>
+  customPresets: ComputedRef<TokenCalculatorPreset[]>
   savePreset: (name: string, description: string, configuration: TokenCalculatorFormData) => string
   loadPreset: (id: string) => TokenCalculatorFormData | null
   deletePreset: (id: string) => boolean

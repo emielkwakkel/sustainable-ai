@@ -11,6 +11,92 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Input Form -->
       <div class="space-y-6">
+        <!-- Presets Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Presets</h2>
+          
+          <div class="space-y-4">
+            <!-- Preset Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Load Preset
+              </label>
+              <div class="flex gap-2">
+                <select
+                  v-model="selectedPresetId"
+                  @change="loadPreset"
+                  class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select a preset...</option>
+                  <optgroup label="Default Presets">
+                    <option v-for="preset in defaultPresets" :key="preset.id" :value="preset.id">
+                      {{ preset.name }}
+                    </option>
+                  </optgroup>
+                  <optgroup v-if="customPresets.length > 0" label="Custom Presets">
+                    <option v-for="preset in customPresets" :key="preset.id" :value="preset.id">
+                      {{ preset.name }}
+                    </option>
+                  </optgroup>
+                </select>
+                <button
+                  @click="clearPresetSelection"
+                  class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Clear
+                </button>
+              </div>
+              <p v-if="selectedPreset" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {{ selectedPreset.description }}
+              </p>
+            </div>
+
+            <!-- Save Current Configuration -->
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
+              <div class="flex gap-2">
+                <input
+                  v-model="newPresetName"
+                  type="text"
+                  placeholder="Preset name"
+                  class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  @click="saveCurrentAsPreset"
+                  :disabled="!newPresetName.trim()"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+              <input
+                v-model="newPresetDescription"
+                type="text"
+                placeholder="Description (optional)"
+                class="w-full mt-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- Custom Presets Management -->
+            <div v-if="customPresets.length > 0" class="border-t border-gray-200 dark:border-gray-600 pt-4">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Custom Presets</h3>
+              <div class="space-y-2">
+                <div v-for="preset in customPresets" :key="preset.id" class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ preset.name }}</p>
+                    <p v-if="preset.description" class="text-xs text-gray-500 dark:text-gray-400">{{ preset.description }}</p>
+                  </div>
+                  <button
+                    @click="deleteCustomPreset(preset.id)"
+                    class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Configuration</h2>
           
@@ -271,8 +357,8 @@
 </template>
 
 <script setup lang="ts">
-import { Calculator } from 'lucide-vue-next'
-import type { TokenCalculatorFormData, CalculationResult } from '~/types/watttime'
+import { Calculator, Trash2 } from 'lucide-vue-next'
+import type { TokenCalculatorFormData, CalculationResult, TokenCalculatorPreset } from '~/types/watttime'
 
 // Set page title
 useHead({
@@ -289,6 +375,17 @@ const {
   formatNumber 
 } = useTokenCalculator()
 
+const {
+  presets,
+  defaultPresets,
+  customPresets,
+  savePreset,
+  loadPreset: loadPresetConfig,
+  deletePreset,
+  exportPresets,
+  importPresets
+} = usePresets()
+
 // State
 const formData = ref<TokenCalculatorFormData>({
   tokenCount: 1000,
@@ -303,6 +400,12 @@ const calculationResult = ref<CalculationResult | null>(null)
 const isCalculating = ref(false)
 const useCustomPue = ref(false)
 const useCustomCarbonIntensity = ref(false)
+
+// Preset state
+const selectedPresetId = ref('')
+const selectedPreset = ref<TokenCalculatorPreset | null>(null)
+const newPresetName = ref('')
+const newPresetDescription = ref('')
 
 // Methods
 const calculate = async () => {
@@ -345,6 +448,54 @@ const exportResults = () => {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
+}
+
+// Preset methods
+const loadPreset = () => {
+  if (!selectedPresetId.value) {
+    selectedPreset.value = null
+    return
+  }
+
+  const configuration = loadPresetConfig(selectedPresetId.value)
+  if (configuration) {
+    formData.value = { ...configuration }
+    selectedPreset.value = presets.value.find((p: TokenCalculatorPreset) => p.id === selectedPresetId.value) || null
+  }
+}
+
+const clearPresetSelection = () => {
+  selectedPresetId.value = ''
+  selectedPreset.value = null
+}
+
+const saveCurrentAsPreset = () => {
+  if (!newPresetName.value.trim()) return
+
+  const id = savePreset(
+    newPresetName.value.trim(),
+    newPresetDescription.value.trim(),
+    { ...formData.value }
+  )
+
+  // Clear the form
+  newPresetName.value = ''
+  newPresetDescription.value = ''
+
+  // Show success message (you could add a toast notification here)
+  console.log('Preset saved successfully')
+}
+
+const deleteCustomPreset = (id: string) => {
+  if (confirm('Are you sure you want to delete this preset?')) {
+    const success = deletePreset(id)
+    if (success) {
+      // Clear selection if the deleted preset was selected
+      if (selectedPresetId.value === id) {
+        clearPresetSelection()
+      }
+    }
+  }
 }
 
 // Auto-update context fields when model changes
