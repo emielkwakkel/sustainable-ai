@@ -294,6 +294,10 @@ useHead({
 })
 
 // Composables
+import { useWattTimeApi } from '~/composables/useWattTimeApi'
+import { useTokenManager } from '~/composables/useTokenManager'
+import { useAppPreferences } from '~/composables/useAppPreferences'
+
 const { register, login } = useWattTimeApi()
 const { connectionStatus, checkConnectionStatus, removeToken } = useTokenManager()
 const { preferences, updatePreference } = useAppPreferences()
