@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { AlertTriangle, Settings } from 'lucide-vue-next'
+import { useTokenManager } from '~/composables/useTokenManager'
 
 const { connectionStatus } = useTokenManager()
 

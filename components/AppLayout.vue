@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { Menu } from 'lucide-vue-next'
 import { cn } from '~/utils/cn'
+import { useAppPreferences } from '~/composables/useAppPreferences'
 
 // Initialize app preferences to ensure theme is applied
 const { preferences } = useAppPreferences()

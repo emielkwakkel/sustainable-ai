@@ -7,6 +7,8 @@ import type {
   ApiResponse 
 } from '~/types/watttime'
 
+import { useTokenManager } from '~/composables/useTokenManager'
+
 export const useCarbonIntensity = () => {
   const { getTokenInfo } = useTokenManager()
   

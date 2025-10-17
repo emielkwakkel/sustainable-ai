@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, BarChart3, Calculator, Settings } from 'lucide-vue-next'
 import { cn } from '~/utils/cn'
+import { useAppPreferences } from '~/composables/useAppPreferences'
 
 // Initialize app preferences to ensure theme is applied
 const { preferences } = useAppPreferences()
