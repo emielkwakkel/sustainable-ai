@@ -73,6 +73,9 @@ useHead({
 })
 
 // Composables
+import { useCarbonIntensity } from '~/composables/useCarbonIntensity'
+import { useTokenManager } from '~/composables/useTokenManager'
+
 const { availableRegions, getCurrentIntensity } = useCarbonIntensity()
 const { connectionStatus } = useTokenManager()
 

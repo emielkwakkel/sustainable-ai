@@ -6,6 +6,8 @@ import type {
   ApiResponse 
 } from '~/types/watttime'
 
+import { useTokenManager } from '~/composables/useTokenManager'
+
 export const useWattTimeApi = () => {
   const config = useRuntimeConfig()
   const { storeToken } = useTokenManager()
