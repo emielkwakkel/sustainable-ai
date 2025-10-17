@@ -146,7 +146,13 @@ export interface HardwareConfig {
   efficiency: number // tokens per watt
 }
 
-export interface DataCenterConfig {
+export interface DataCenterProvider {
+  id: string
+  name: string
+  regions: DataCenterRegion[]
+}
+
+export interface DataCenterRegion {
   id: string
   name: string
   region: string
@@ -181,7 +187,8 @@ export interface TokenCalculatorFormData {
   contextLength: number
   contextWindow: number
   hardware: string
-  dataCenter: string
+  dataCenterProvider: string
+  dataCenterRegion: string
   customPue?: number
   customCarbonIntensity?: number
 }

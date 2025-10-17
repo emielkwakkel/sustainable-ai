@@ -9,14 +9,16 @@ export const usePresets = (): PresetManager => {
       id: 'gpt-4-research',
       name: 'GPT-4 Token Research',
       isDefault: true,
-      description: 'Based on the research paper methodology for accurate carbon tracking',
+      description: 'Based on Anu\'s Substack article "We can use tokens to track AI\'s carbon"', // https://anuragsridharan.substack.com/p/we-can-use-tokens-to-track-ais-carbon
       configuration: {
-        tokenCount: 1000,
+        tokenCount: 200,
         model: 'gpt-4',
         contextLength: 8000,
         contextWindow: 1250,
         hardware: 'nvidia-a100',
-        dataCenter: 'google-korea'
+        dataCenterProvider: 'aws',
+        dataCenterRegion: 'aws-asia-pacific-tokyo',
+        customPue: 1.1,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -32,7 +34,8 @@ export const usePresets = (): PresetManager => {
         contextLength: 8000,
         contextWindow: 1250,
         hardware: 'nvidia-h100',
-        dataCenter: 'azure-us' // Azure US data center
+        dataCenterProvider: 'azure',
+        dataCenterRegion: 'azure-virginia' // Azure US data center
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

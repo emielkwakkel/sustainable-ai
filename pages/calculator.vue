@@ -11,94 +11,14 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Input Form -->
       <div class="space-y-6">
-        <!-- Presets Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Presets</h2>
-          
-          <div class="space-y-4">
-            <!-- Preset Selection -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Load Preset
-              </label>
-              <div class="flex gap-2">
-                <select
-                  v-model="selectedPresetId"
-                  @change="loadPreset"
-                  class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select a preset...</option>
-                  <optgroup label="Default Presets">
-                    <option v-for="preset in defaultPresets" :key="preset.id" :value="preset.id">
-                      {{ preset.name }}
-                    </option>
-                  </optgroup>
-                  <optgroup v-if="customPresets.length > 0" label="Custom Presets">
-                    <option v-for="preset in customPresets" :key="preset.id" :value="preset.id">
-                      {{ preset.name }}
-                    </option>
-                  </optgroup>
-                </select>
-                <button
-                  @click="clearPresetSelection"
-                  class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                >
-                  Clear
-                </button>
-              </div>
-              <p v-if="selectedPreset" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {{ selectedPreset.description }}
-              </p>
-            </div>
-
-            <!-- Save Current Configuration -->
-            <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
-              <div class="flex gap-2">
-                <input
-                  v-model="newPresetName"
-                  type="text"
-                  placeholder="Preset name"
-                  class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <button
-                  @click="saveCurrentAsPreset"
-                  :disabled="!newPresetName.trim()"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Save
-                </button>
-              </div>
-              <input
-                v-model="newPresetDescription"
-                type="text"
-                placeholder="Description (optional)"
-                class="w-full mt-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <!-- Custom Presets Management -->
-            <div v-if="customPresets.length > 0" class="border-t border-gray-200 dark:border-gray-600 pt-4">
-              <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Custom Presets</h3>
-              <div class="space-y-2">
-                <div v-for="preset in customPresets" :key="preset.id" class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                  <div>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ preset.name }}</p>
-                    <p v-if="preset.description" class="text-xs text-gray-500 dark:text-gray-400">{{ preset.description }}</p>
-                  </div>
-                  <button
-                    @click="deleteCustomPreset(preset.id)"
-                    class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Configuration</h2>
+            <PresetManager 
+              :current-configuration="formData"
+              @preset-loaded="handlePresetLoaded"
+            />
           </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Configuration</h2>
           
           <form @submit.prevent="calculate" class="space-y-4">
             <!-- Token Count -->
@@ -182,20 +102,41 @@
               </select>
             </div>
 
-            <!-- Data Center Selection -->
+            <!-- Data Center Provider Selection -->
             <div>
-              <label for="dataCenter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label for="dataCenterProvider" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Data Center Provider
+              </label>
+              <select
+                id="dataCenterProvider"
+                v-model="formData.dataCenterProvider"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option v-for="provider in dataCenterProviders" :key="provider.id" :value="provider.id">
+                  {{ provider.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Data Center Region Selection -->
+            <div>
+              <label for="dataCenterRegion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Data Center Region
               </label>
               <select
-                id="dataCenter"
-                v-model="formData.dataCenter"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                id="dataCenterRegion"
+                v-model="formData.dataCenterRegion"
+                :disabled="!formData.dataCenterProvider"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
               >
-                <option v-for="dataCenter in dataCenterConfigs" :key="dataCenter.id" :value="dataCenter.id">
-                  {{ dataCenter.name }} ({{ dataCenter.region }})
+                <option value="">Select a region...</option>
+                <option v-for="region in availableRegions" :key="region.id" :value="region.id">
+                  {{ region.name }} ({{ region.region }})
                 </option>
               </select>
+              <p v-if="selectedRegionPue" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                PUE: {{ selectedRegionPue }} | Carbon Intensity: {{ selectedRegionCarbonIntensity }} kg CO₂/kWh
+              </p>
             </div>
 
             <!-- Advanced Options -->
@@ -210,13 +151,18 @@
                       type="checkbox"
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Use custom PUE</span>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Override PUE</span>
                   </label>
+                  <div v-if="!useCustomPue && selectedRegionPue" class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p class="text-sm text-blue-700 dark:text-blue-300">
+                      Using region PUE: <span class="font-medium">{{ selectedRegionPue }}</span>
+                    </p>
+                  </div>
                   <input
                     v-if="useCustomPue"
                     v-model.number="formData.customPue"
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="1.0"
                     max="3.0"
                     class="mt-2 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -231,8 +177,13 @@
                       type="checkbox"
                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Use custom carbon intensity</span>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Override carbon intensity</span>
                   </label>
+                  <div v-if="!useCustomCarbonIntensity && selectedRegionCarbonIntensity" class="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p class="text-sm text-green-700 dark:text-green-300">
+                      Using region carbon intensity: <span class="font-medium">{{ selectedRegionCarbonIntensity }} kg CO₂/kWh</span>
+                    </p>
+                  </div>
                   <input
                     v-if="useCustomCarbonIntensity"
                     v-model.number="formData.customCarbonIntensity"
@@ -357,8 +308,9 @@
 </template>
 
 <script setup lang="ts">
-import { Calculator, Trash2 } from 'lucide-vue-next'
-import type { TokenCalculatorFormData, CalculationResult, TokenCalculatorPreset } from '~/types/watttime'
+import { Calculator } from 'lucide-vue-next'
+import type { TokenCalculatorFormData, CalculationResult } from '~/types/watttime'
+import { useTokenCalculator } from '~/composables/useTokenCalculator'
 
 // Set page title
 useHead({
@@ -369,22 +321,16 @@ useHead({
 const { 
   aiModels, 
   hardwareConfigs, 
-  dataCenterConfigs, 
+  dataCenterProviders,
+  getRegionsForProvider,
+  getPueForRegion,
+  getCarbonIntensityForRegion,
   calculateEmissions, 
   validateFormData,
   formatNumber 
 } = useTokenCalculator()
 
-const {
-  presets,
-  defaultPresets,
-  customPresets,
-  savePreset,
-  loadPreset: loadPresetConfig,
-  deletePreset,
-  exportPresets,
-  importPresets
-} = usePresets()
+// Removed preset composable - now handled by PresetManager component
 
 // State
 const formData = ref<TokenCalculatorFormData>({
@@ -393,7 +339,8 @@ const formData = ref<TokenCalculatorFormData>({
   contextLength: 8000,
   contextWindow: 1250,
   hardware: 'nvidia-a100',
-  dataCenter: 'google-korea'
+  dataCenterProvider: 'aws',
+  dataCenterRegion: 'aws-asia-pacific-tokyo'
 })
 
 const calculationResult = ref<CalculationResult | null>(null)
@@ -401,11 +348,18 @@ const isCalculating = ref(false)
 const useCustomPue = ref(false)
 const useCustomCarbonIntensity = ref(false)
 
-// Preset state
-const selectedPresetId = ref('')
-const selectedPreset = ref<TokenCalculatorPreset | null>(null)
-const newPresetName = ref('')
-const newPresetDescription = ref('')
+// Computed properties for data center regions
+const availableRegions = computed(() => {
+  return getRegionsForProvider(formData.value.dataCenterProvider)
+})
+
+const selectedRegionPue = computed(() => {
+  return getPueForRegion(formData.value.dataCenterProvider, formData.value.dataCenterRegion)
+})
+
+const selectedRegionCarbonIntensity = computed(() => {
+  return getCarbonIntensityForRegion(formData.value.dataCenterProvider, formData.value.dataCenterRegion)
+})
 
 // Methods
 const calculate = async () => {
@@ -450,52 +404,13 @@ const exportResults = () => {
   URL.revokeObjectURL(url)
 }
 
-// Preset methods
-const loadPreset = () => {
-  if (!selectedPresetId.value) {
-    selectedPreset.value = null
-    return
-  }
-
-  const configuration = loadPresetConfig(selectedPresetId.value)
-  if (configuration) {
-    formData.value = { ...configuration }
-    selectedPreset.value = presets.value.find((p: TokenCalculatorPreset) => p.id === selectedPresetId.value) || null
-  }
-}
-
-const clearPresetSelection = () => {
-  selectedPresetId.value = ''
-  selectedPreset.value = null
-}
-
-const saveCurrentAsPreset = () => {
-  if (!newPresetName.value.trim()) return
-
-  const id = savePreset(
-    newPresetName.value.trim(),
-    newPresetDescription.value.trim(),
-    { ...formData.value }
-  )
-
-  // Clear the form
-  newPresetName.value = ''
-  newPresetDescription.value = ''
-
-  // Show success message (you could add a toast notification here)
-  console.log('Preset saved successfully')
-}
-
-const deleteCustomPreset = (id: string) => {
-  if (confirm('Are you sure you want to delete this preset?')) {
-    const success = deletePreset(id)
-    if (success) {
-      // Clear selection if the deleted preset was selected
-      if (selectedPresetId.value === id) {
-        clearPresetSelection()
-      }
-    }
-  }
+// Preset handler
+const handlePresetLoaded = (configuration: TokenCalculatorFormData) => {
+  formData.value = { ...configuration }
+  
+  // Check if preset contains custom values and update checkbox states
+  useCustomPue.value = configuration.customPue !== undefined
+  useCustomCarbonIntensity.value = configuration.customCarbonIntensity !== undefined
 }
 
 // Auto-update context fields when model changes
@@ -505,6 +420,31 @@ watch(() => formData.value.model, (newModel) => {
     formData.value.contextLength = selectedModel.contextLength
     formData.value.contextWindow = selectedModel.contextWindow
   }
+})
+
+// Auto-fill PUE when region changes
+watch(() => formData.value.dataCenterRegion, (newRegion) => {
+  if (newRegion && !useCustomPue.value) {
+    const pue = selectedRegionPue.value
+    if (pue !== null) {
+      formData.value.customPue = pue
+    }
+  }
+})
+
+// Auto-fill carbon intensity when region changes
+watch(() => formData.value.dataCenterRegion, (newRegion) => {
+  if (newRegion && !useCustomCarbonIntensity.value) {
+    const carbonIntensity = selectedRegionCarbonIntensity.value
+    if (carbonIntensity !== null) {
+      formData.value.customCarbonIntensity = carbonIntensity
+    }
+  }
+})
+
+// Reset region when provider changes
+watch(() => formData.value.dataCenterProvider, () => {
+  formData.value.dataCenterRegion = ''
 })
 
 // Auto-calculate when form data changes

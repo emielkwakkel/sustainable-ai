@@ -11,7 +11,8 @@ describe('useTokenCalculator', () => {
       contextLength: 8000,
       contextWindow: 1250,
       hardware: 'nvidia-a100',
-      dataCenter: 'google-korea'
+      dataCenterProvider: 'google-cloud',
+      dataCenterRegion: 'google-oregon'
     }
 
     const result = calculateEmissions(formData)
@@ -33,7 +34,7 @@ describe('useTokenCalculator', () => {
     
     // Calculate expected carbon emissions dynamically
     const expectedEnergyPerTokenKwh = (0.4 / 1400) * 1.6 * 0.372 * 1.1
-    const expectedCarbonPerTokenGrams = expectedEnergyPerTokenKwh * 0.459 * 1000
+    const expectedCarbonPerTokenGrams = expectedEnergyPerTokenKwh * 0.200 * 1000
     expect(result.carbonEmissionsGrams).toBeCloseTo(expectedCarbonPerTokenGrams, 3)
     expect(result.totalEmissionsGrams).toBeCloseTo(expectedCarbonPerTokenGrams * 1000, 1)
   })
@@ -45,7 +46,8 @@ describe('useTokenCalculator', () => {
       contextLength: 8000,
       contextWindow: 1250,
       hardware: 'nvidia-a100',
-      dataCenter: 'google-korea'
+      dataCenterProvider: 'google-cloud',
+      dataCenterRegion: 'google-oregon'
     }
 
     const validation = validateFormData(validData)
@@ -60,7 +62,8 @@ describe('useTokenCalculator', () => {
       contextLength: 8000,
       contextWindow: 1250,
       hardware: 'nvidia-a100',
-      dataCenter: 'google-korea'
+      dataCenterProvider: 'google-cloud',
+      dataCenterRegion: 'google-oregon'
     }
 
     const validation = validateFormData(invalidData)
@@ -75,7 +78,8 @@ describe('useTokenCalculator', () => {
       contextLength: 500,
       contextWindow: 1250,
       hardware: 'nvidia-a100',
-      dataCenter: 'google-korea'
+      dataCenterProvider: 'google-cloud',
+      dataCenterRegion: 'google-oregon'
     }
 
     const validation = validateFormData(invalidData)
@@ -96,7 +100,8 @@ describe('useTokenCalculator', () => {
       contextLength: 8000,
       contextWindow: 1250,
       hardware: 'nvidia-a100',
-      dataCenter: 'google-korea'
+      dataCenterProvider: 'google-cloud',
+      dataCenterRegion: 'google-oregon'
     }
 
     const result = calculateEmissions(formData)
@@ -117,7 +122,8 @@ describe('useTokenCalculator', () => {
       contextLength: 8000,
       contextWindow: 1250,
       hardware: 'nvidia-a100',
-      dataCenter: 'google-korea',
+      dataCenterProvider: 'google-cloud',
+      dataCenterRegion: 'google-oregon',
       customCarbonIntensity: 0.2 // Lower carbon intensity
     }
 
@@ -139,7 +145,8 @@ describe('useTokenCalculator', () => {
       contextLength: 4000,
       contextWindow: 1000,
       hardware: 'nvidia-v100',
-      dataCenter: 'google-korea'
+      dataCenterProvider: 'google-cloud',
+      dataCenterRegion: 'google-oregon'
     }
 
     const result = calculateEmissions(formData)
