@@ -5,6 +5,12 @@
     "module": "CommonJS",
     "lib": ["ES2020"],
     "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@susai/types": ["../types/dist/src/index.d.ts"],
+      "@susai/config": ["../config/dist/src/index.d.ts"],
+      "@susai/core": ["../core/dist/src/index.d.ts"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

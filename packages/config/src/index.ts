@@ -165,7 +165,7 @@ export const getDataCenterProviderById = (id: string): DataCenterProvider | unde
 
 export const getDataCenterRegionById = (providerId: string, regionId: string): DataCenterRegion | undefined => {
   const provider = getDataCenterProviderById(providerId)
-  return provider?.regions.find(region => region.id === regionId)
+  return provider?.regions.find((region: DataCenterRegion) => region.id === regionId)
 }
 
 export const getRegionsForProvider = (providerId: string): DataCenterRegion[] => {

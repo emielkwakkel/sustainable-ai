@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Sustainable AI Platform - A comprehensive platform for carbon-aware AI development",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 nx serve dashboard",
     "test": "nx test --coverage",

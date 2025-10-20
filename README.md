@@ -235,11 +235,11 @@ npm run test --workspace=packages/core
 The platform follows a prioritized roadmap:
 
 1. ✅ **Settings** - WattTime API integration and user preferences
-2. 🔄 **Dashboard** - Carbon intensity monitoring with visual indicators
-3. 🔄 **Token Calculator** - AI model carbon footprint calculations
-4. 🔄 **App Structure** - Navigation and layout improvements
-5. 🔄 **API Server** - REST API for programmatic access
-6. 🔄 **CLI Tool** - Command-line interface for CI/CD integration
+2. ✅ **Dashboard** - Carbon intensity monitoring with visual indicators
+3. ✅ **Token Calculator** - AI model carbon footprint calculations
+4. ✅ **App Structure** - Navigation and layout improvements
+5. ✅ **API Server** - REST API for programmatic access
+6. ✅ **CLI Tool** - Command-line interface for CI/CD integration
 
 ## Contributing
 

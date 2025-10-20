@@ -1,0 +1,19 @@
+{
+  "name": "@susai/cli",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "sustainable-ai": "dist/src/index.js",
+    "susai-cli": "dist/src/index.js"
+  },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "type": "commonjs",
+  "dependencies": {
+    "@susai/core": "1.0.0",
+    "@susai/config": "1.0.0",
+    "@susai/types": "1.0.0"
+  }
+}
+
+

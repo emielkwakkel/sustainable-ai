@@ -1,0 +1,10 @@
+{
+  "name": "@susai/types",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "type": "commonjs"
+}
+
+
