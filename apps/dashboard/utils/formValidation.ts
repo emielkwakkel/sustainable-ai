@@ -1,4 +1,5 @@
 import type { FormFieldError, FormValidationResult } from '~/types/watttime'
+import { ref, readonly, watch } from 'vue'
 
 // Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -96,11 +97,15 @@ export const getFieldError = (errors: FormFieldError[], field: string): string |
 }
 
 // Debounced validation for real-time feedback
-export const useDebouncedValidation = (value: Ref<string>, validator: (val: string) => FormFieldError | null, delay = 300) => {
+export const useDebouncedValidation = (
+  value: Ref<string>,
+  validator: (val: string) => FormFieldError | null,
+  delay = 300
+) => {
   const error = ref<FormFieldError | null>(null)
   const isValidating = ref(false)
-  
-  let timeoutId: NodeJS.Timeout | null = null
+
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
   
   watch(value, (newValue) => {
     if (timeoutId) {

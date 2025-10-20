@@ -95,7 +95,7 @@ export const useWattTimeApi = () => {
 
     try {
       // Test the connection using server-side proxy
-      const response = await $fetch('/api/watttime/test-connection', {
+      const response = await $fetch<{ connected: boolean }>('/api/watttime/test-connection', {
         method: 'GET',
         query: { token: tokenInfo.token }
       })

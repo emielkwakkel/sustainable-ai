@@ -1,5 +1,14 @@
+import { fileURLToPath } from 'node:url'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  alias: {
+    "@susai/types": fileURLToPath(new URL("../../packages/types/src/index.ts", import.meta.url)),
+    "@susai/config": fileURLToPath(new URL("../../packages/config/src/index.ts", import.meta.url)),
+      "@susai/core": fileURLToPath(new URL("../../packages/core/src/index.ts", import.meta.url)),
+      "@susai/api": fileURLToPath(new URL("../../packages/api/src/index.ts", import.meta.url)),
+      "@susai/cli": fileURLToPath(new URL("../../packages/cli/src/index.ts", import.meta.url)),
+  },
   devtools: { enabled: true },
   
   // TypeScript configuration
@@ -52,5 +61,6 @@ export default defineNuxtConfig({
       cert: './certs/localhost-cert.pem'
     }
   }
+
 })
 

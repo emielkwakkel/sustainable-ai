@@ -1,4 +1,14 @@
 {
-  "extends": "./.nuxt/tsconfig.json"
+  "rootDir": ".",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@susai/types": ["packages/types/src/index.ts"],
+      "@susai/config": ["packages/config/src/index.ts"],
+      "@susai/core": ["packages/core/src/index.ts"],
+      "@susai/api": ["packages/api/src/index.ts"],
+      "@susai/cli": ["packages/cli/src/index.ts"],
+    }
+  }
 }
 

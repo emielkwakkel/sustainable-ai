@@ -29,10 +29,10 @@ vi.mock('~/composables/useTokenManager', () => ({
 }))
 
 // Mock import.meta.client
-Object.defineProperty(import.meta, 'client', {
-  value: true,
-  writable: true
-})
+// Object.defineProperty(import.meta, 'client', {
+//   value: true,
+//   writable: true
+// })
 
 // Mock localStorage
 const localStorageMock = {

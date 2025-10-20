@@ -309,7 +309,7 @@
 
 <script setup lang="ts">
 import { Calculator } from 'lucide-vue-next'
-import type { TokenCalculatorFormData, CalculationResult } from '~/types/watttime'
+import type { TokenCalculatorFormData, CalculationResult, AIModel } from '~/types/watttime'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
 
 // Set page title
@@ -414,8 +414,8 @@ const handlePresetLoaded = (configuration: TokenCalculatorFormData) => {
 }
 
 // Auto-update context fields when model changes
-watch(() => formData.value.model, (newModel) => {
-  const selectedModel = aiModels.find(model => model.id === newModel)
+watch(() => formData.value.model, (newModel: string) => {
+  const selectedModel = aiModels.find((m: AIModel) => m.id === newModel)
   if (selectedModel) {
     formData.value.contextLength = selectedModel.contextLength
     formData.value.contextWindow = selectedModel.contextWindow

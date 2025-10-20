@@ -44,7 +44,7 @@ export const usePresets = (): PresetManager => {
 
   // Load presets from localStorage
   const loadPresets = (): TokenCalculatorPreset[] => {
-    if (import.meta.client) {
+    if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem(STORAGE_KEY)
         if (stored) {
@@ -60,7 +60,7 @@ export const usePresets = (): PresetManager => {
 
   // Save presets to localStorage
   const savePresets = (presets: TokenCalculatorPreset[]) => {
-    if (import.meta.client) {
+    if (typeof window !== 'undefined') {
       try {
         const customPresets = presets.filter(p => !p.isDefault)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(customPresets))

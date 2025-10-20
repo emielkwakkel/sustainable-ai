@@ -1,0 +1,19 @@
+{
+  "name": "dashboard",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/dashboard",
+  "projectType": "application",
+  "targets": {
+    "setup:certificates": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "mkdir -p apps/dashboard/certs",
+          "openssl req -x509 -newkey rsa:4096 -keyout apps/dashboard/certs/localhost-key.pem -out apps/dashboard/certs/localhost-cert.pem -days 365 -nodes -subj \"/C=US/ST=State/L=City/O=Organization/CN=localhost\" -addext \"subjectAltName=DNS:localhost,IP:127.0.0.1\""
+        ]
+      }
+    }
+  },
+  "tags": ["scope:dashboard", "type:application"],
+  "implicitDependencies": ["types", "config", "core"]
+}
