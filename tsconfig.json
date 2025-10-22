@@ -1,14 +1,26 @@
 {
-  "rootDir": ".",
   "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@susai/types": ["packages/types/src/index.ts"],
-      "@susai/config": ["packages/config/src/index.ts"],
-      "@susai/core": ["packages/core/src/index.ts"],
+      "@susai/types": ["packages/types/src/index.ts", "packages/types/dist/src/index.d.ts"],
+      "@susai/config": ["packages/config/src/index.ts", "packages/config/dist/src/index.d.ts"],
+      "@susai/core": ["packages/core/src/index.ts", "packages/core/dist/src/index.d.ts"],
       "@susai/api": ["packages/api/src/index.ts"],
-      "@susai/cli": ["packages/cli/src/index.ts"],
+      "@susai/cli": ["packages/cli/src/index.ts"]
     }
-  }
+  },
+  "include": [],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
 

@@ -249,6 +249,10 @@ The platform follows a prioritized roadmap:
 4. Test on both mobile and desktop
 5. Follow sustainable coding practices
 
+## Notes
+- 21/10: Spent mostly on fixing NX monorepository structure, Cursor seems unable to fully get all packages to work together
+- 22/10: Manual fixes to NX monorepository structure
+
 ## License
 
 This project is developed for sustainable AI development and carbon awareness in software engineering.
