@@ -206,34 +206,92 @@
         </button>
       </div>
       
-      <div class="flex items-center space-x-3">
-        <div :class="[
-          'w-3 h-3 rounded-full',
-          connectionStatus.connected ? 'bg-green-500' : 'bg-red-500'
-        ]"></div>
-        <span class="text-gray-900 dark:text-white">
-          {{ connectionStatus.connected ? 'Connected to WattTime' : 'Not connected to WattTime' }}
-        </span>
+      <!-- Overall Status -->
+      <div class="mb-6">
+        <div class="flex items-center space-x-3 mb-2">
+          <div :class="[
+            'w-4 h-4 rounded-full',
+            connectionStatus.overall ? 'bg-green-500' : 'bg-red-500'
+          ]"></div>
+          <span class="text-lg font-medium text-gray-900 dark:text-white">
+            {{ connectionStatus.overall ? 'All Systems Connected' : 'Connection Issues Detected' }}
+          </span>
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          {{ connectionStatus.overall 
+            ? 'Both WattTime and API services are operational.' 
+            : 'One or more services are not available. Check individual statuses below.' 
+          }}
+        </p>
       </div>
-      
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-        {{ connectionStatus.connected 
-          ? 'You have access to real-time carbon intensity data for your regions.' 
-          : 'Connect to WattTime to access real-time carbon intensity data for your regions.' 
-        }}
-      </p>
-      
-      <div v-if="connectionStatus.connected && connectionStatus.expires" class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-        Token expires: {{ formatDate(connectionStatus.expires) }}
+
+      <!-- WattTime Status -->
+      <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-medium text-gray-900 dark:text-white">WattTime API</h4>
+          <div class="flex items-center space-x-2">
+            <div :class="[
+              'w-2 h-2 rounded-full',
+              connectionStatus.watttime.connected ? 'bg-green-500' : 'bg-red-500'
+            ]"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ connectionStatus.watttime.connected ? 'Connected' : 'Disconnected' }}
+            </span>
+          </div>
+        </div>
+        
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          {{ connectionStatus.watttime.connected 
+            ? 'Access to real-time carbon intensity data is available.' 
+            : 'Connect to WattTime to access real-time carbon intensity data.' 
+          }}
+        </p>
+        
+        <div v-if="connectionStatus.watttime.connected && connectionStatus.watttime.expires" class="text-xs text-gray-500 dark:text-gray-400">
+          Token expires: {{ formatDate(connectionStatus.watttime.expires) }}
+        </div>
+        
+        <div v-if="connectionStatus.watttime.connected" class="mt-2">
+          <button 
+            @click="handleLogout"
+            class="px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+          >
+            Disconnect
+          </button>
+        </div>
       </div>
-      
-      <div v-if="connectionStatus.connected" class="mt-4">
-        <button 
-          @click="handleLogout"
-          class="px-3 py-1 text-sm bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
-        >
-          Disconnect
-        </button>
+
+      <!-- API Health Status -->
+      <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-medium text-gray-900 dark:text-white">Middleware API</h4>
+          <div class="flex items-center space-x-2">
+            <div :class="[
+              'w-2 h-2 rounded-full',
+              connectionStatus.api.healthy ? 'bg-green-500' : 'bg-red-500'
+            ]"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ connectionStatus.api.healthy ? 'Healthy' : 'Unhealthy' }}
+            </span>
+          </div>
+        </div>
+        
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+          {{ connectionStatus.api.healthy 
+            ? 'API server is running and responding to requests.' 
+            : 'API server is not available. Check if the server is running on port 3001.' 
+          }}
+        </p>
+        
+        <div v-if="connectionStatus.api.healthy && connectionStatus.api.version" class="text-xs text-gray-500 dark:text-gray-400">
+          Version: {{ connectionStatus.api.version }} | 
+          Uptime: {{ formatUptime(connectionStatus.api.uptime) }} | 
+          Environment: {{ connectionStatus.api.environment }}
+        </div>
+        
+        <div v-if="!connectionStatus.api.healthy && connectionStatus.api.error" class="text-xs text-red-500 dark:text-red-400 mt-1">
+          Error: {{ connectionStatus.api.error }}
+        </div>
       </div>
     </div>
 
@@ -437,9 +495,25 @@ const toggleAutoRefresh = () => {
   updatePreference('autoRefresh', !preferences.value.autoRefresh)
 }
 
-// Utility function
+// Utility functions
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString()
+}
+
+const formatUptime = (uptimeSeconds?: number) => {
+  if (!uptimeSeconds) return 'Unknown'
+  
+  const hours = Math.floor(uptimeSeconds / 3600)
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60)
+  const seconds = Math.floor(uptimeSeconds % 60)
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds}s`
+  } else {
+    return `${seconds}s`
+  }
 }
 
 // Check connection status on page load

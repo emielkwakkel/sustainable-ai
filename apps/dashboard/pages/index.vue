@@ -158,7 +158,7 @@ let refreshInterval: NodeJS.Timeout | null = null
 
 onMounted(() => {
   // Check connection status
-  if (connectionStatus.value.connected) {
+  if (connectionStatus.value.overall) {
     refreshInterval = setInterval(refreshAllRegions, 5 * 60 * 1000) // 5 minutes
   }
 })
@@ -171,9 +171,9 @@ onUnmounted(() => {
 
 // Watch connection status
 watch(connectionStatus, (newStatus) => {
-  if (newStatus.connected && !refreshInterval) {
+  if (newStatus.overall && !refreshInterval) {
     refreshInterval = setInterval(refreshAllRegions, 5 * 60 * 1000)
-  } else if (!newStatus.connected && refreshInterval) {
+  } else if (!newStatus.overall && refreshInterval) {
     clearInterval(refreshInterval)
     refreshInterval = null
   }

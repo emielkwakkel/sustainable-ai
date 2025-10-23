@@ -1,5 +1,10 @@
 import { vi } from 'vitest'
 
+// Mock Vue composables
+const ref = vi.fn((val) => ({ value: val }))
+const computed = vi.fn((fn) => ({ value: fn() }))
+const readonly = vi.fn((val) => val)
+
 // Mock Nuxt composables
 vi.mock('#app', () => ({
   useRuntimeConfig: () => ({
@@ -10,23 +15,18 @@ vi.mock('#app', () => ({
   $fetch: vi.fn(),
   useHead: vi.fn(),
   useState: vi.fn(() => ref(false)),
-  ref: vi.fn((val) => ({ value: val })),
-  computed: vi.fn((fn) => ({ value: fn() })),
+  ref,
+  computed,
+  readonly,
   watch: vi.fn(),
   onMounted: vi.fn(),
   onUnmounted: vi.fn()
 }))
 
-// Mock useTokenManager
-vi.mock('~/composables/useTokenManager', () => ({
-  useTokenManager: () => ({
-    getTokenInfo: vi.fn(() => ({
-      token: 'test-token',
-      isValid: true
-    })),
-    connectionStatus: ref({ connected: true })
-  })
-}))
+// Make ref and computed available globally
+;(global as any).ref = ref
+;(global as any).computed = computed
+;(global as any).readonly = readonly
 
 // Mock import.meta.client
 // Object.defineProperty(import.meta, 'client', {

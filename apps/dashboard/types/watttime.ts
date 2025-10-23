@@ -41,6 +41,23 @@ export interface WattTimeConnectionStatus {
   lastChecked: Date
 }
 
+// API Health Types
+export interface ApiHealthStatus {
+  healthy: boolean
+  lastChecked: Date
+  error?: string
+  version?: string
+  uptime?: number
+  environment?: string
+}
+
+// Combined Connection Status
+export interface ConnectionStatus {
+  watttime: WattTimeConnectionStatus
+  api: ApiHealthStatus
+  overall: boolean
+}
+
 // Form validation types
 export interface FormFieldError {
   field: string

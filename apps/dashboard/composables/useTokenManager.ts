@@ -1,14 +1,24 @@
-import type { WattTimeTokenInfo, WattTimeConnectionStatus } from '~/types/watttime'
+import type { WattTimeTokenInfo, WattTimeConnectionStatus, ConnectionStatus } from '~/types/watttime'
 
 const TOKEN_STORAGE_KEY = 'watttime_token'
 const TOKEN_EXPIRY_STORAGE_KEY = 'watttime_token_expires'
 
 export const useTokenManager = () => {
-  // Reactive state for connection status
-  const connectionStatus = ref<WattTimeConnectionStatus>({
+  // Import API health composable
+  const { apiHealth, checkApiHealth } = useApiHealth()
+  
+  // Reactive state for WattTime connection status
+  const watttimeStatus = ref<WattTimeConnectionStatus>({
     connected: false,
     lastChecked: new Date()
   })
+
+  // Combined connection status
+  const connectionStatus = computed<ConnectionStatus>(() => ({
+    watttime: watttimeStatus.value,
+    api: apiHealth.value,
+    overall: watttimeStatus.value.connected && apiHealth.value.healthy
+  }))
 
   // Check if token exists and is valid
   const isTokenValid = (): boolean => {
@@ -51,8 +61,8 @@ export const useTokenManager = () => {
       localStorage.setItem(TOKEN_STORAGE_KEY, token)
       localStorage.setItem(TOKEN_EXPIRY_STORAGE_KEY, expires)
       
-      // Update connection status
-      connectionStatus.value = {
+      // Update WattTime connection status
+      watttimeStatus.value = {
         connected: true,
         token,
         expires,
@@ -67,31 +77,41 @@ export const useTokenManager = () => {
       localStorage.removeItem(TOKEN_STORAGE_KEY)
       localStorage.removeItem(TOKEN_EXPIRY_STORAGE_KEY)
       
-      // Update connection status
-      connectionStatus.value = {
+      // Update WattTime connection status
+      watttimeStatus.value = {
         connected: false,
         lastChecked: new Date()
       }
     }
   }
 
-  // Check connection status
-  const checkConnectionStatus = async (): Promise<WattTimeConnectionStatus> => {
+  // Check WattTime connection status
+  const checkWattTimeStatus = async (): Promise<WattTimeConnectionStatus> => {
     const tokenInfo = getTokenInfo()
     
     if (tokenInfo && tokenInfo.isValid) {
-      connectionStatus.value = {
+      watttimeStatus.value = {
         connected: true,
         token: tokenInfo.token,
         expires: tokenInfo.expires,
         lastChecked: new Date()
       }
     } else {
-      connectionStatus.value = {
+      watttimeStatus.value = {
         connected: false,
         lastChecked: new Date()
       }
     }
+    
+    return watttimeStatus.value
+  }
+
+  // Check both connection statuses
+  const checkConnectionStatus = async (): Promise<ConnectionStatus> => {
+    await Promise.all([
+      checkWattTimeStatus(),
+      checkApiHealth()
+    ])
     
     return connectionStatus.value
   }
@@ -103,10 +123,14 @@ export const useTokenManager = () => {
 
   return {
     connectionStatus: readonly(connectionStatus),
+    watttimeStatus: readonly(watttimeStatus),
+    apiHealth: readonly(apiHealth),
     isTokenValid,
     getTokenInfo,
     storeToken,
     removeToken,
-    checkConnectionStatus
+    checkConnectionStatus,
+    checkWattTimeStatus,
+    checkApiHealth
   }
 }
