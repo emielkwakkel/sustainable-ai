@@ -308,6 +308,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import { Calculator } from 'lucide-vue-next'
 import type { TokenCalculatorFormData, CalculationResult, AIModel } from '~/types/watttime'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
@@ -445,11 +446,16 @@ watch(() => formData.value.dataCenterRegion, (newRegion) => {
 // Reset region when provider changes
 watch(() => formData.value.dataCenterProvider, () => {
   formData.value.dataCenterRegion = ''
+  // Prevent calculation during provider change
+  isCalculating.value = true
+  nextTick(() => {
+    isCalculating.value = false
+  })
 })
 
 // Auto-calculate when form data changes
 watch(formData, () => {
-  if (formData.value.tokenCount > 0) {
+  if (formData.value.tokenCount > 0 && !isCalculating.value) {
     calculate()
   }
 }, { deep: true })
