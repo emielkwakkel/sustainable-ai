@@ -24,46 +24,36 @@ export const useTokenCalculator = () => {
 
   // Validate form data using the core engine
   const validateFormData = (formData: TokenCalculatorFormData): { isValid: boolean; errors: string[] } => {
-    const pickOrThrow = <T>(value: T | undefined, message: string): T => {
-      if (value === undefined || value === null) {
-        throw new Error(message)
-      }
-      return value
+    const errors: string[] = []
+
+    // Validate token count
+    if (formData.tokenCount < 1 || formData.tokenCount > 1000000) {
+      errors.push('Token count must be between 1 and 1,000,000')
     }
 
-    const model: AIModel = pickOrThrow(
-      aiModels.find(m => m.id === formData.model) ?? aiModels[0],
-      'No AI models configured'
-    )
+    // Validate context length
+    if (formData.contextLength < 1000 || formData.contextLength > 32000) {
+      errors.push('Context length must be between 1,000 and 32,000 tokens')
+    }
 
-    const hardware: HardwareConfig = pickOrThrow(
-      hardwareConfigs.find(h => h.id === formData.hardware) ?? hardwareConfigs[0],
-      'No hardware configurations configured'
-    )
+    // Validate context window
+    if (formData.contextWindow < 100 || formData.contextWindow > 2000) {
+      errors.push('Context window must be between 100 and 2,000 tokens')
+    }
 
-    const provider = pickOrThrow(
-      dataCenterProviders.find(p => p.id === formData.dataCenterProvider) ?? dataCenterProviders[0],
-      'No data center providers configured'
-    )
+    // Validate custom PUE if provided
+    if (formData.customPue && (formData.customPue < 1.0 || formData.customPue > 3.0)) {
+      errors.push('PUE must be between 1.0 and 3.0')
+    }
 
-    const dataCenter: DataCenterRegion = pickOrThrow(
-      provider.regions.find(r => r.id === formData.dataCenterRegion) ?? provider.regions[0],
-      'No data center regions configured for selected provider'
-    )
-
-    const validation = sustainableAICalculator.validateParams({
-      tokenCount: formData.tokenCount,
-      model,
-      hardware,
-      dataCenter,
-      customPue: formData.customPue,
-      customCarbonIntensity: formData.customCarbonIntensity,
-      contextWindow: formData.contextWindow
-    })
+    // Validate custom carbon intensity if provided
+    if (formData.customCarbonIntensity && (formData.customCarbonIntensity < 0.0 || formData.customCarbonIntensity > 1.0)) {
+      errors.push('Carbon intensity must be between 0.0 and 1.0 kg CO₂/kWh')
+    }
 
     return {
-      isValid: validation.isValid,
-      errors: validation.errors.map(error => error.message)
+      isValid: errors.length === 0,
+      errors
     }
   }
 

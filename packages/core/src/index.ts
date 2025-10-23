@@ -79,6 +79,11 @@ export class SustainableAICalculator implements CalculationEngine {
       errors.push('Token count must be between 1 and 1,000,000')
     }
 
+    // Check if context length is within supported range
+    // Note: This should validate the actual context length being used, not the model's max
+    // For now, we'll validate that the context length is reasonable
+    // TODO: This validation should be moved to the form validation layer
+    // where we can access the form data's context length
     if (params.model.contextLength < 1000 || params.model.contextLength > 32000) {
       errors.push('Context length must be between 1,000 and 32,000 tokens')
     }

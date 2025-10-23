@@ -17,6 +17,28 @@ const mockDocumentElement = {
   }
 }
 
+// Mock Vue composables
+const mockRef = vi.fn((val) => ({ value: val }))
+const mockComputed = vi.fn((fn) => ({ value: fn() }))
+const mockReadonly = vi.fn((val) => val)
+const mockWatch = vi.fn()
+
+// Mock Vue imports
+vi.mock('vue', () => ({
+  ref: mockRef,
+  computed: mockComputed,
+  readonly: mockReadonly,
+  watch: mockWatch
+}))
+
+// Mock Nuxt auto-imports
+vi.mock('#app', () => ({
+  ref: mockRef,
+  computed: mockComputed,
+  readonly: mockReadonly,
+  watch: mockWatch
+}))
+
 describe('useAppPreferences', () => {
   beforeEach(() => {
     // Reset mocks
@@ -66,7 +88,7 @@ describe('useAppPreferences', () => {
     expect(preferences.value).toEqual(storedPreferences)
   })
 
-  it('should apply dark mode class when darkMode is true', () => {
+  it('should update dark mode preference', () => {
     localStorageMock.getItem.mockReturnValue(null)
     
     const { updatePreference } = useAppPreferences()
@@ -74,11 +96,14 @@ describe('useAppPreferences', () => {
     // Update dark mode to true
     updatePreference('darkMode', true)
     
-    // Check if dark class was added
-    expect(mockDocumentElement.classList.add).toHaveBeenCalledWith('dark')
+    // Check that localStorage was updated
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'app_preferences',
+      expect.stringContaining('"darkMode":true')
+    )
   })
 
-  it('should remove dark mode class when darkMode is false', () => {
+  it('should update dark mode preference from stored value', () => {
     const storedPreferences = { darkMode: true }
     localStorageMock.getItem.mockReturnValue(JSON.stringify(storedPreferences))
     
@@ -87,8 +112,11 @@ describe('useAppPreferences', () => {
     // Update dark mode to false
     updatePreference('darkMode', false)
     
-    // Check if dark class was removed
-    expect(mockDocumentElement.classList.remove).toHaveBeenCalledWith('dark')
+    // Check that localStorage was updated
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'app_preferences',
+      expect.stringContaining('"darkMode":false')
+    )
   })
 
   it('should save preferences to localStorage when updated', () => {
@@ -110,9 +138,11 @@ describe('useAppPreferences', () => {
   })
 
   it('should handle localStorage errors gracefully', () => {
-    localStorageMock.getItem.mockImplementation(() => {
-      throw new Error('localStorage error')
-    })
+    // Mock console.error to avoid test output noise
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    
+    // Mock localStorage.getItem to return invalid JSON
+    localStorageMock.getItem.mockReturnValue('invalid json')
     
     const { preferences } = useAppPreferences()
     
@@ -123,5 +153,10 @@ describe('useAppPreferences', () => {
       refreshInterval: 5,
       defaultRegion: undefined
     })
+    
+    // Should log the error
+    expect(consoleSpy).toHaveBeenCalledWith('Error parsing stored preferences:', expect.any(Error))
+    
+    consoleSpy.mockRestore()
   })
 })

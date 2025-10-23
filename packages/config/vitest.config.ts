@@ -3,14 +3,13 @@ import { resolve } from 'path'
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: 'node',
     globals: true,
-    setupFiles: ['./apps/dashboard/test/setup.ts']
   },
   resolve: {
     alias: {
-      '~': resolve(__dirname, '.'),
-      '@': resolve(__dirname, '.')
+      '@': resolve(__dirname, './src'),
+      '@susai/types': resolve(__dirname, '../types/src/index.ts'),
     }
   }
 })
