@@ -83,8 +83,42 @@ const { connectionStatus } = useTokenManager()
 const regions = ref<DashboardRegion[]>([])
 const isRefreshing = ref(false)
 
+// LocalStorage key for regions
+const REGIONS_STORAGE_KEY = 'dashboard_regions'
+
 // Computed
 const selectedRegionCodes = computed(() => regions.value.map(r => r.region))
+
+// LocalStorage functions
+const saveRegionsToStorage = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(REGIONS_STORAGE_KEY, JSON.stringify(regions.value))
+    } catch (error) {
+      console.error('Failed to save regions to localStorage:', error)
+    }
+  }
+}
+
+const loadRegionsFromStorage = (): DashboardRegion[] => {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(REGIONS_STORAGE_KEY)
+      if (stored) {
+        const parsedRegions = JSON.parse(stored) as DashboardRegion[]
+        // Validate that the stored data has the required structure
+        if (Array.isArray(parsedRegions) && parsedRegions.every(region => 
+          region.id && region.region && region.name
+        )) {
+          return parsedRegions
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load regions from localStorage:', error)
+    }
+  }
+  return []
+}
 
 // Methods
 const addRegion = async (region: AvailableRegion) => {
@@ -96,6 +130,7 @@ const addRegion = async (region: AvailableRegion) => {
   }
   
   regions.value.push(newRegion)
+  saveRegionsToStorage()
   console.log('New region added:', newRegion)
   
   // Fetch data for the new region
@@ -106,6 +141,7 @@ const removeRegion = (id: string) => {
   const index = regions.value.findIndex(r => r.id === id)
   if (index > -1) {
     regions.value.splice(index, 1)
+    saveRegionsToStorage()
   }
 }
 
@@ -156,7 +192,17 @@ const refreshAllRegions = async () => {
 // Auto-refresh every 5 minutes
 let refreshInterval: NodeJS.Timeout | null = null
 
-onMounted(() => {
+onMounted(async () => {
+  // Load regions from localStorage
+  const storedRegions = loadRegionsFromStorage()
+  if (storedRegions.length > 0) {
+    regions.value = storedRegions
+    // Fetch data for all stored regions
+    await Promise.all(
+      regions.value.map(region => fetchRegionData(region.id))
+    )
+  }
+  
   // Check connection status
   if (connectionStatus.value.overall) {
     refreshInterval = setInterval(refreshAllRegions, 5 * 60 * 1000) // 5 minutes
@@ -178,4 +224,9 @@ watch(connectionStatus, (newStatus) => {
     refreshInterval = null
   }
 })
+
+// Watch regions and save to localStorage when they change
+watch(regions, () => {
+  saveRegionsToStorage()
+}, { deep: true })
 </script>
