@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 const ref = vi.fn((val) => ({ value: val }))
 const computed = vi.fn((fn) => ({ value: fn() }))
 const readonly = vi.fn((val) => val)
+const watch = vi.fn()
 
 // Mock Nuxt composables
 vi.mock('#app', () => ({
@@ -18,7 +19,7 @@ vi.mock('#app', () => ({
   ref,
   computed,
   readonly,
-  watch: vi.fn(),
+  watch,
   onMounted: vi.fn(),
   onUnmounted: vi.fn()
 }))
@@ -27,6 +28,7 @@ vi.mock('#app', () => ({
 ;(global as any).ref = ref
 ;(global as any).computed = computed
 ;(global as any).readonly = readonly
+;(global as any).watch = watch
 
 // Mock import.meta.client
 // Object.defineProperty(import.meta, 'client', {

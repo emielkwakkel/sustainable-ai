@@ -10,181 +10,6 @@
       </div>
     </div>
 
-    <!-- WattTime Registration Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Register to WattTime</h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-4">
-        Create a new WattTime account to access real-time carbon intensity data.
-      </p>
-      
-      <form @submit.prevent="handleRegistration" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Username
-            </label>
-            <input 
-              v-model="registrationForm.username"
-              type="text" 
-              placeholder="Enter your username"
-              :class="[
-                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                registrationErrors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              ]"
-            />
-            <p v-if="registrationErrors.username" class="text-red-500 text-sm mt-1">
-              {{ registrationErrors.username }}
-            </p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email Address
-            </label>
-            <input 
-              v-model="registrationForm.email"
-              type="email" 
-              placeholder="Enter your email"
-              :class="[
-                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                registrationErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              ]"
-            />
-            <p v-if="registrationErrors.email" class="text-red-500 text-sm mt-1">
-              {{ registrationErrors.email }}
-            </p>
-          </div>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Password
-            </label>
-            <input 
-              v-model="registrationForm.password"
-              type="password" 
-              placeholder="Enter your password"
-              :class="[
-                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                registrationErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              ]"
-            />
-            <p v-if="registrationErrors.password" class="text-red-500 text-sm mt-1">
-              {{ registrationErrors.password }}
-            </p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Organization (Optional)
-            </label>
-            <input 
-              v-model="registrationForm.org"
-              type="text" 
-              placeholder="Enter your organization"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-        
-        <div class="flex items-center space-x-4">
-          <button 
-            type="submit"
-            :disabled="isRegistering"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span v-if="isRegistering" class="flex items-center">
-              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Registering...
-            </span>
-            <span v-else>Register Account</span>
-          </button>
-          
-          <p v-if="registrationMessage" :class="[
-            'text-sm',
-            registrationSuccess ? 'text-green-600' : 'text-red-500'
-          ]">
-            {{ registrationMessage }}
-          </p>
-        </div>
-      </form>
-    </div>
-
-    <!-- WattTime Connection Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Connect to WattTime</h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-4">
-        Connect your existing WattTime account to access real-time data.
-      </p>
-      
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Username
-            </label>
-            <input 
-              v-model="loginForm.username"
-              type="text" 
-              placeholder="Enter your username"
-              :class="[
-                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                loginErrors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              ]"
-            />
-            <p v-if="loginErrors.username" class="text-red-500 text-sm mt-1">
-              {{ loginErrors.username }}
-            </p>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Password
-            </label>
-            <input 
-              v-model="loginForm.password"
-              type="password" 
-              placeholder="Enter your password"
-              :class="[
-                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                loginErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              ]"
-            />
-            <p v-if="loginErrors.password" class="text-red-500 text-sm mt-1">
-              {{ loginErrors.password }}
-            </p>
-          </div>
-        </div>
-        
-        <div class="flex items-center space-x-4">
-          <button 
-            type="submit"
-            :disabled="isLoggingIn"
-            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span v-if="isLoggingIn" class="flex items-center">
-              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Connecting...
-            </span>
-            <span v-else>Connect Account</span>
-          </button>
-          
-          <p v-if="loginMessage" :class="[
-            'text-sm',
-            loginSuccess ? 'text-green-600' : 'text-red-500'
-          ]">
-            {{ loginMessage }}
-          </p>
-        </div>
-      </form>
-    </div>
 
     <!-- Connection Status -->
     <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -240,21 +65,42 @@
           </div>
         </div>
         
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
           {{ connectionStatus.watttime.connected 
             ? 'Access to real-time carbon intensity data is available.' 
             : 'Connect to WattTime to access real-time carbon intensity data.' 
           }}
         </p>
         
-        <div v-if="connectionStatus.watttime.connected && connectionStatus.watttime.expires" class="text-xs text-gray-500 dark:text-gray-400">
+        <div v-if="connectionStatus.watttime.connected && connectionStatus.watttime.expires" class="text-xs text-gray-500 dark:text-gray-400 mb-3">
           Token expires: {{ formatDate(connectionStatus.watttime.expires) }}
         </div>
         
-        <div v-if="connectionStatus.watttime.connected" class="mt-2">
+        <div class="flex items-center space-x-2">
           <button 
+            @click="openWattTimeLoginPopup"
+            :disabled="connectionStatus.watttime.connected"
+            :class="[
+              'px-3 py-1 text-sm rounded transition-colors',
+              connectionStatus.watttime.connected
+                ? 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800'
+            ]"
+          >
+            {{ connectionStatus.watttime.connected ? 'Connected' : 'Login' }}
+          </button>
+          
+          <button 
+            @click="openWattTimeRegisterPopup"
+            class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+          >
+            Register new Account
+          </button>
+          
+          <button 
+            v-if="connectionStatus.watttime.connected"
             @click="handleLogout"
-            class="px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+            class="px-3 py-1 text-sm bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
           >
             Disconnect
           </button>
@@ -339,134 +185,67 @@
         </div>
       </div>
     </div>
+
+    <!-- WattTime Login Popup -->
+    <WattTimeLoginPopup
+      :is-open="isWattTimeLoginPopupOpen"
+      @close="closeWattTimeLoginPopup"
+      @login-success="handleLoginSuccess"
+    />
+
+    <!-- WattTime Register Popup -->
+    <WattTimeRegisterPopup
+      :is-open="isWattTimeRegisterPopupOpen"
+      @close="closeWattTimeRegisterPopup"
+      @registration-success="handleRegistrationSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { validateRegistrationForm, validateLoginForm, getFieldError } from '~/utils/formValidation'
-import type { WattTimeRegistrationRequest, WattTimeLoginRequest } from '~/types/watttime'
-
 // Set page title
 useHead({
   title: 'Settings - Sustainable AI Dashboard'
 })
 
 // Composables
-import { useWattTimeApi } from '~/composables/useWattTimeApi'
 import { useTokenManager } from '~/composables/useTokenManager'
 import { useAppPreferences } from '~/composables/useAppPreferences'
 
-const { register, login } = useWattTimeApi()
 const { connectionStatus, checkConnectionStatus, removeToken } = useTokenManager()
 const { preferences, updatePreference } = useAppPreferences()
 
-// Form state
-const registrationForm = ref<WattTimeRegistrationRequest>({
-  username: '',
-  email: '',
-  password: '',
-  org: ''
-})
-
-const loginForm = ref<WattTimeLoginRequest>({
-  username: '',
-  password: ''
-})
-
-// Loading states
-const isRegistering = ref(false)
-const isLoggingIn = ref(false)
+// Popup state
+const isWattTimeLoginPopupOpen = ref(false)
+const isWattTimeRegisterPopupOpen = ref(false)
 const isCheckingConnection = ref(false)
 
-// Messages
-const registrationMessage = ref('')
-const registrationSuccess = ref(false)
-const loginMessage = ref('')
-const loginSuccess = ref(false)
-
-// Form errors
-const registrationErrors = ref<Record<string, string>>({})
-const loginErrors = ref<Record<string, string>>({})
-
-// Registration handler
-const handleRegistration = async () => {
-  // Clear previous messages
-  registrationMessage.value = ''
-  registrationErrors.value = {}
-  
-  // Validate form
-  const validation = validateRegistrationForm(
-    registrationForm.value.username, 
-    registrationForm.value.email, 
-    registrationForm.value.password, 
-    registrationForm.value.org
-  )
-  if (!validation.isValid) {
-    validation.errors.forEach(error => {
-      registrationErrors.value[error.field] = error.message
-    })
-    return
-  }
-  
-  isRegistering.value = true
-  
-  try {
-    const result = await register(registrationForm.value)
-    
-    if (result.success) {
-      registrationSuccess.value = true
-      registrationMessage.value = 'Account registered successfully! You can now connect to WattTime.'
-      // Clear form
-      registrationForm.value = { username: '', email: '', password: '', org: '' }
-    } else {
-      registrationSuccess.value = false
-      registrationMessage.value = result.error || 'Registration failed. Please try again.'
-    }
-  } catch (error) {
-    registrationSuccess.value = false
-    registrationMessage.value = 'An unexpected error occurred. Please try again.'
-  } finally {
-    isRegistering.value = false
-  }
+// Popup handlers
+const openWattTimeLoginPopup = () => {
+  isWattTimeLoginPopupOpen.value = true
 }
 
-// Login handler
-const handleLogin = async () => {
-  // Clear previous messages
-  loginMessage.value = ''
-  loginErrors.value = {}
-  
-  // Validate form
-  const validation = validateLoginForm(loginForm.value.username, loginForm.value.password)
-  if (!validation.isValid) {
-    validation.errors.forEach(error => {
-      loginErrors.value[error.field] = error.message
-    })
-    return
-  }
-  
-  isLoggingIn.value = true
-  
-  try {
-    const result = await login(loginForm.value)
-    
-    if (result.success) {
-      loginSuccess.value = true
-      loginMessage.value = 'Successfully connected to WattTime!'
-      // Clear form
-      loginForm.value = { username: '', password: '' }
-      // Update connection status
-      await checkConnectionStatus()
-    } else {
-      loginSuccess.value = false
-      loginMessage.value = result.error || 'Login failed. Please check your credentials.'
-    }
-  } catch (error) {
-    loginSuccess.value = false
-    loginMessage.value = 'An unexpected error occurred. Please try again.'
-  } finally {
-    isLoggingIn.value = false
-  }
+const closeWattTimeLoginPopup = () => {
+  isWattTimeLoginPopupOpen.value = false
+}
+
+const openWattTimeRegisterPopup = () => {
+  isWattTimeRegisterPopupOpen.value = true
+}
+
+const closeWattTimeRegisterPopup = () => {
+  isWattTimeRegisterPopupOpen.value = false
+}
+
+const handleLoginSuccess = async () => {
+  await checkConnectionStatus()
+  closeWattTimeLoginPopup()
+}
+
+const handleRegistrationSuccess = () => {
+  // Registration success - popup will show success message
+  // User can then use the login popup
+  closeWattTimeRegisterPopup()
 }
 
 // Connection check
@@ -482,8 +261,6 @@ const checkConnection = async () => {
 // Logout handler
 const handleLogout = () => {
   removeToken()
-  loginMessage.value = ''
-  registrationMessage.value = ''
 }
 
 // Preference handlers
