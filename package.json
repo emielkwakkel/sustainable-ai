@@ -9,7 +9,8 @@
     "lint": "nx lint",
     "typecheck": "nx type-check",
     "clean": "nx reset",
-    "setup:certificates": "nx run dashboard:setup:certificates"
+    "setup:certificates": "nx run dashboard:setup:certificates",
+    "setup:db": "nx run api:setup:db"
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^6.8.0",
@@ -27,6 +28,7 @@
     "lucide-vue-next": "^0.545.0",
     "nuxt": "4.1.2",
     "ora": "^8.0.1",
+    "pg": "^8.16.3",
     "shadcn-vue": "^2.3.1",
     "table": "^6.8.1",
     "tailwind-merge": "^3.3.1",
@@ -47,8 +49,9 @@
     "@nx/workspace": "21.6.5",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
+    "@types/express": "^4.17.23",
     "@types/node": "^24.5.2",
+    "@types/pg": "^8.15.5",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.36.0",

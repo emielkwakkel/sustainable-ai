@@ -52,9 +52,15 @@ export interface ApiHealthStatus {
 }
 
 // Combined Connection Status
+export interface CursorConnectionStatus {
+  connected: boolean
+  lastTest?: string
+}
+
 export interface ConnectionStatus {
   watttime: WattTimeConnectionStatus
   api: ApiHealthStatus
+  cursor: CursorConnectionStatus
   overall: boolean
 }
 
@@ -83,6 +89,54 @@ export interface ApiResponse<T> {
   error?: string
   success: boolean
   status?: number
+}
+
+// Specific API response types
+export interface ProjectsApiResponse {
+  success: boolean
+  data: Project[]
+  error?: string
+}
+
+export interface ProjectApiResponse {
+  success: boolean
+  data: {
+    project: Project
+    analytics: ProjectAnalytics
+    recentCalculations: Calculation[]
+  }
+  error?: string
+}
+
+export interface CalculationsApiResponse {
+  success: boolean
+  data: Calculation[]
+  pagination?: {
+    total: number
+    limit: number
+    offset: number
+  }
+  error?: string
+}
+
+export interface CursorImportApiResponse {
+  success: boolean
+  data: {
+    importId: string
+    importedCount: number
+    calculationIds: string[]
+    dateRange: {
+      start_date: string
+      end_date: string
+    }
+  }
+  error?: string
+}
+
+export interface CursorTestApiResponse {
+  success: boolean
+  message?: string
+  error?: string
 }
 
 // Carbon intensity data types
@@ -231,4 +285,70 @@ export interface PresetManager {
   updatePreset: (id: string, name: string, description: string, configuration: TokenCalculatorFormData) => boolean
   exportPresets: () => string
   importPresets: (data: string) => boolean
+}
+
+// Projects Types
+export interface Project {
+  id: string
+  name: string
+  description?: string
+  calculation_preset_id: string
+  created_at: string
+  updated_at: string
+  user_id: string
+  calculation_count?: number
+  total_emissions_grams?: number
+  total_energy_joules?: number
+  avg_emissions_per_token?: number
+}
+
+export interface Calculation {
+  id: string
+  project_id: string
+  token_count: number
+  model: string
+  context_length?: number
+  context_window?: number
+  hardware?: string
+  data_center_provider?: string
+  data_center_region?: string
+  custom_pue?: number
+  custom_carbon_intensity?: number
+  calculation_parameters?: any
+  results: CalculationResult
+  created_at: string
+  updated_at: string
+}
+
+export interface ProjectAnalytics {
+  totalEmissionsGrams: number
+  totalEnergyJoules: number
+  averageEmissionsPerToken: number
+  calculationCount: number
+  dateRange: {
+    start: string
+    end: string
+  }
+}
+
+export interface CursorImport {
+  id: string
+  project_id: string
+  start_date: string
+  end_date: string
+  raw_data: any
+  imported_at: string
+  status: string
+  record_count?: number
+}
+
+export interface CursorUsageData {
+  date: string
+  kind: string
+  model: string
+  maxMode: string
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+  cost: number
 }

@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight, BarChart3, Calculator, Settings } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, BarChart3, Calculator, Settings, FolderOpen } from 'lucide-vue-next'
 import { cn } from '~/utils/cn'
 import { useAppPreferences } from '~/composables/useAppPreferences'
 
@@ -90,6 +90,12 @@ const menuItems: MenuItem[] = [
     label: 'Dashboard',
     href: '/',
     icon: BarChart3
+  },
+  {
+    name: 'projects',
+    label: 'Projects',
+    href: '/projects',
+    icon: FolderOpen
   },
   {
     name: 'calculator',

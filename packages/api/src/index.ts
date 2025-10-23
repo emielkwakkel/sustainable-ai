@@ -10,6 +10,9 @@ import { calculationRoutes } from './routes/calculation'
 import { configRoutes } from './routes/config'
 import { healthRoutes } from './routes/health'
 import { watttimeRoutes } from './routes/watttime'
+import projectsRoutes from './routes/projects'
+import calculationsRoutes from './routes/calculations'
+import cursorImportRoutes from './routes/cursor-import'
 
 // Load environment variables
 dotenv.config()
@@ -35,6 +38,9 @@ app.use('/api/health', healthRoutes)
 app.use('/api/calculation', calculationRoutes)
 app.use('/api/config', configRoutes)
 app.use('/api/watttime', watttimeRoutes)
+app.use('/api/projects', projectsRoutes)
+app.use('/api/calculations', calculationsRoutes)
+app.use('/api/cursor-import', cursorImportRoutes)
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

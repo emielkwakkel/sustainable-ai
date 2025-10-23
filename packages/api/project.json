@@ -48,6 +48,16 @@
       "options": {
         "tsConfig": "packages/api/tsconfig.json"
       }
+    },
+    "setup:db": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx packages/api/src/setup-db.ts",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "NODE_ENV": "development"
+        }
+      }
     }
   },
   "tags": ["scope:api", "type:application"],
