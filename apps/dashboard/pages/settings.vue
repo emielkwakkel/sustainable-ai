@@ -87,7 +87,7 @@
                 : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800'
             ]"
           >
-            {{ connectionStatus.watttime.connected ? 'Connected' : 'Login' }}
+            {{ connectionStatus.watttime.connected ? 'Logged in' : 'Login' }}
           </button>
           
           <button 
