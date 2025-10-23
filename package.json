@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 nx start dashboard",
-    "test": "nx test --coverage",
+    "test": "nx run-many -t test --coverage",
     "lint": "nx lint",
     "typecheck": "nx type-check",
     "clean": "nx reset",
