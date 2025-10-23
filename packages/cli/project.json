@@ -5,13 +5,15 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/esbuild:esbuild",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "packages/cli/dist",
+        "outputPath": "dist/packages/cli",
         "main": "packages/cli/src/index.ts",
         "tsConfig": "packages/cli/tsconfig.json",
-        "assets": ["packages/cli/*.md"]
+        "assets": ["packages/cli/*.md"],
+        "format": ["cjs"],
+        "platform": "node"
       }
     },
     "serve": {

@@ -5,13 +5,15 @@
   "projectType": "library",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/esbuild:esbuild",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "packages/config/dist",
+        "outputPath": "dist/packages/config",
         "main": "packages/config/src/index.ts",
         "tsConfig": "packages/config/tsconfig.json",
-        "assets": ["packages/config/*.md", "packages/config/data/**/*"]
+        "assets": ["packages/config/*.md"],
+        "format": ["esm", "cjs"],
+        "declaration": true
       }
     },
     "test": {

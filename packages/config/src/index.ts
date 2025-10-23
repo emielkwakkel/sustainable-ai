@@ -3,7 +3,7 @@ import type {
   HardwareConfig, 
   DataCenterProvider,
   DataCenterRegion 
-} from '@susai/types'
+} from '../../types/src/index'
 
 // Predefined AI models
 export const aiModels: AIModel[] = [

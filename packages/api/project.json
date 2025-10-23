@@ -5,13 +5,16 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/esbuild:esbuild",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "packages/api/dist",
+        "outputPath": "dist/packages/api",
         "main": "packages/api/src/index.ts",
         "tsConfig": "packages/api/tsconfig.json",
-        "assets": ["packages/api/*.md"]
+        "assets": ["packages/api/*.md"],
+        "format": ["cjs"],
+        "platform": "node",
+        "generatePackageJson": true
       }
     },
     "serve": {
