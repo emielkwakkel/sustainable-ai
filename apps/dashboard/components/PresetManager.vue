@@ -40,7 +40,7 @@
           <div class="flex gap-2">
             <select
               v-model="selectedPresetId"
-              @change="loadPreset"
+              @change="updateSelectedPreset"
               class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a preset...</option>
@@ -120,12 +120,14 @@
           <div class="flex gap-2">
             <button
               @click="handleExportPresets"
-              class="flex-1 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              class="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              Export Presets
+              <Download class="w-4 h-4" />
+              Export
             </button>
-            <label class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center">
-              Import Presets
+            <label class="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+              <Upload class="w-4 h-4" />
+              Import
               <input
                 type="file"
                 accept=".json"
@@ -138,7 +140,14 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex justify-between gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <button
+          @click="loadPreset"
+          :disabled="!selectedPresetId"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Load Preset
+        </button>
         <button
           @click="closePopup"
           class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
@@ -151,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { Settings, X, Trash2 } from 'lucide-vue-next'
+import { Settings, X, Trash2, Download, Upload } from 'lucide-vue-next'
 import type { TokenCalculatorFormData, TokenCalculatorPreset } from '~/types/watttime'
 import { usePresets } from '~/composables/usePresets'
 
@@ -197,16 +206,24 @@ const closePopup = () => {
   newPresetDescription.value = ''
 }
 
-const loadPreset = () => {
+const updateSelectedPreset = () => {
   if (!selectedPresetId.value) {
     selectedPreset.value = null
+    return
+  }
+  
+  selectedPreset.value = presets.value.find((p: TokenCalculatorPreset) => p.id === selectedPresetId.value) || null
+}
+
+const loadPreset = () => {
+  if (!selectedPresetId.value) {
     return
   }
 
   const configuration = loadPresetConfig(selectedPresetId.value)
   if (configuration) {
     emit('preset-loaded', configuration)
-    selectedPreset.value = presets.value.find((p: TokenCalculatorPreset) => p.id === selectedPresetId.value) || null
+    closePopup()
   }
 }
 
