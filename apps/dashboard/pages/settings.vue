@@ -488,7 +488,10 @@ const handleLogout = () => {
 
 // Preference handlers
 const toggleDarkMode = () => {
+  console.log('Current dark mode:', preferences.value.darkMode)
   updatePreference('darkMode', !preferences.value.darkMode)
+  console.log('New dark mode:', preferences.value.darkMode)
+  console.log('HTML classes:', document.documentElement.classList.toString())
 }
 
 const toggleAutoRefresh = () => {

@@ -65,11 +65,15 @@ export const useAppPreferences = () => {
     // Apply dark mode
     if (typeof window !== 'undefined') {
       const html = document.documentElement
+      console.log('Applying dark mode:', newPreferences.darkMode)
       if (newPreferences.darkMode) {
         html.classList.add('dark')
+        console.log('Added dark class')
       } else {
         html.classList.remove('dark')
+        console.log('Removed dark class')
       }
+      console.log('HTML classes after change:', html.classList.toString())
     }
   }, { deep: true, immediate: true })
 

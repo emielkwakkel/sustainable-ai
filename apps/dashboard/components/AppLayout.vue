@@ -44,6 +44,17 @@ import { useAppPreferences } from '~/composables/useAppPreferences'
 // Initialize app preferences to ensure theme is applied
 const { preferences } = useAppPreferences()
 
+// Ensure dark mode is applied on mount
+onMounted(() => {
+  console.log('AppLayout mounted, dark mode:', preferences.value.darkMode)
+  const html = document.documentElement
+  if (preferences.value.darkMode) {
+    html.classList.add('dark')
+  } else {
+    html.classList.remove('dark')
+  }
+})
+
 const isCollapsed = useState('sidebar-collapsed', () => false)
 const isMobile = useState('is-mobile', () => false)
 
