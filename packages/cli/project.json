@@ -23,14 +23,6 @@
         "watch": true
       }
     },
-    "test": {
-      "executor": "@nx/vite:test",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
-      "options": {
-        "passWithNoTests": true,
-        "reportsDirectory": "../../coverage/packages/cli"
-      }
-    },
     "lint": {
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
