@@ -18,10 +18,14 @@
       }
     },
     "serve": {
-      "executor": "@nx/js:node",
+      "executor": "nx:run-commands",
       "options": {
-        "buildTarget": "api:build",
-        "watch": true
+        "command": "node dist/packages/api/index.cjs",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "NODE_ENV": "development",
+          "PORT": "3001"
+        }
       }
     },
     "test": {

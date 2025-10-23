@@ -12,6 +12,9 @@ import { useTokenManager } from '~/composables/useTokenManager'
 export const useCarbonIntensity = () => {
   const { getTokenInfo } = useTokenManager()
   
+  // API base URL - use the API package server with HTTPS
+  const API_BASE_URL = 'https://localhost:3001/api'
+  
   // Available regions for selection
   const availableRegions: AvailableRegion[] = [
     { code: 'CAISO_NORTH', name: 'California ISO North', description: 'Northern California' },
@@ -56,7 +59,7 @@ export const useCarbonIntensity = () => {
     }
 
     try {
-      const response = await $fetch<SignalIndexResponse>('/api/watttime/current-intensity', {
+      const response = await $fetch<SignalIndexResponse>(`${API_BASE_URL}/watttime/current-intensity`, {
         method: 'GET',
         query: { 
           region,
@@ -102,7 +105,7 @@ export const useCarbonIntensity = () => {
     }
 
     try {
-      const response = await $fetch<ForecastResponse>('/api/watttime/forecast', {
+      const response = await $fetch<ForecastResponse>(`${API_BASE_URL}/watttime/forecast`, {
         method: 'GET',
         query: { 
           region,

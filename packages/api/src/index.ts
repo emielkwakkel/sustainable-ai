@@ -3,12 +3,22 @@ import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
 import dotenv from 'dotenv'
+import https from 'https'
+import fs from 'fs'
+import path from 'path'
 import { calculationRoutes } from './routes/calculation'
 import { configRoutes } from './routes/config'
 import { healthRoutes } from './routes/health'
+import { watttimeRoutes } from './routes/watttime'
 
 // Load environment variables
 dotenv.config()
+
+// Disable SSL certificate verification for development
+// This allows the API to make requests to external services without SSL issues
+if (process.env.NODE_ENV === 'development') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+}
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -24,6 +34,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/api/health', healthRoutes)
 app.use('/api/calculation', calculationRoutes)
 app.use('/api/config', configRoutes)
+app.use('/api/watttime', watttimeRoutes)
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -46,11 +57,60 @@ app.use('*', (req, res) => {
 
 // Start server
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 Sustainable AI API server running on port ${PORT}`)
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`)
-    console.log(`🧮 Calculation API: http://localhost:${PORT}/api/calculation`)
-    console.log(`⚙️  Config API: http://localhost:${PORT}/api/config`)
+  // Try to load SSL certificates for HTTPS
+  const certPath = path.join(__dirname, '../../../certs')
+  const keyPath = path.join(certPath, 'localhost-key.pem')
+  const certPath_file = path.join(certPath, 'localhost-cert.pem')
+  
+  let server: any
+  
+  try {
+    // Check if SSL certificates exist
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath_file)) {
+      const options = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath_file)
+      }
+      
+      server = https.createServer(options, app)
+      server.listen(PORT, () => {
+        console.log(`🚀 Sustainable AI API server running on HTTPS port ${PORT}`)
+        console.log(`📊 Health check: https://localhost:${PORT}/api/health`)
+        console.log(`🧮 Calculation API: https://localhost:${PORT}/api/calculation`)
+        console.log(`⚙️  Config API: https://localhost:${PORT}/api/config`)
+        console.log(`🌍 WattTime API: https://localhost:${PORT}/api/watttime`)
+      })
+    } else {
+      // Fallback to HTTP if no certificates
+      console.log('⚠️  SSL certificates not found, running on HTTP')
+      server = app.listen(PORT, () => {
+        console.log(`🚀 Sustainable AI API server running on HTTP port ${PORT}`)
+        console.log(`📊 Health check: http://localhost:${PORT}/api/health`)
+        console.log(`🧮 Calculation API: http://localhost:${PORT}/api/calculation`)
+        console.log(`⚙️  Config API: http://localhost:${PORT}/api/config`)
+        console.log(`🌍 WattTime API: http://localhost:${PORT}/api/watttime`)
+      })
+    }
+  } catch (error) {
+    console.error('Error starting server:', error)
+    process.exit(1)
+  }
+  
+  // Keep the server alive
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully')
+    server?.close(() => {
+      console.log('Server closed')
+      process.exit(0)
+    })
+  })
+  
+  process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully')
+    server?.close(() => {
+      console.log('Server closed')
+      process.exit(0)
+    })
   })
 }
 

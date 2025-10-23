@@ -4,7 +4,7 @@
   "description": "Sustainable AI Platform - A comprehensive platform for carbon-aware AI development",
   "private": true,
   "scripts": {
-    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 nx serve dashboard",
+    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 nx start dashboard",
     "test": "nx test --coverage",
     "lint": "nx lint",
     "typecheck": "nx type-check",

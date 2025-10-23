@@ -113,13 +113,13 @@ sustainable-ai-platform/
 │       ├── assets/
 │       ├── test/
 │       ├── tests/
-│       ├── certs/
 │       ├── project.json
 │       ├── app.vue
 │       ├── nuxt.config.ts
 │       ├── tsconfig.json
 │       ├── vitest.config.ts
 │       └── package.json
+├── certs/                        # Localhost certificates
 ├── docs/                        # Platform documentation
 ├── .cursor/                     # Cursor AI configuration
 │   └── mcp.json                 # MCP server configuration
@@ -162,7 +162,7 @@ sustainable-ai-platform/
 ### HTTPS Development Setup
 - **SSL Certificates**: Self-signed certificates for localhost HTTPS development
 - **Certificate Generation**: Use `nx run dashboard:setup:certificates` to generate certificates
-- **Development Server**: Use `nx serve dashboard` for HTTPS development
+- **Development Server**: Use `nx start dashboard` for HTTPS development
 - **Security Note**: Certificates are gitignored and regenerated for each environment
 - **Browser Warning**: Self-signed certificates will show security warnings (normal for development)
 

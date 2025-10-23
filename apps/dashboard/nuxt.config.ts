@@ -57,8 +57,8 @@ export default defineNuxtConfig({
     port: 3000,
     host: 'localhost',
     https: {
-      key: './certs/localhost-key.pem',
-      cert: './certs/localhost-cert.pem'
+      key: '../../certs/localhost-key.pem',
+      cert: '../../certs/localhost-cert.pem'
     }
   }
 

@@ -11,11 +11,14 @@ import { useTokenManager } from '~/composables/useTokenManager'
 export const useWattTimeApi = () => {
   const config = useRuntimeConfig()
   const { storeToken } = useTokenManager()
+  
+  // API base URL - use the API package server with HTTPS
+  const API_BASE_URL = 'https://localhost:3001/api'
 
   // Registration function
   const register = async (request: WattTimeRegistrationRequest): Promise<ApiResponse<WattTimeRegistrationResponse>> => {
     try {
-      const response = await $fetch<WattTimeRegistrationResponse>('/api/watttime/register', {
+      const response = await $fetch<WattTimeRegistrationResponse>(`${API_BASE_URL}/watttime/register`, {
         method: 'POST',
         body: request
       })
@@ -40,7 +43,7 @@ export const useWattTimeApi = () => {
     try {
       console.log('Attempting WattTime login for user:', request.username)
       
-      const response = await $fetch<WattTimeLoginResponse>('/api/watttime/login', {
+      const response = await $fetch<WattTimeLoginResponse>(`${API_BASE_URL}/watttime/login`, {
         method: 'POST',
         body: request
       })
@@ -94,8 +97,8 @@ export const useWattTimeApi = () => {
     }
 
     try {
-      // Test the connection using server-side proxy
-      const response = await $fetch<{ connected: boolean }>('/api/watttime/test-connection', {
+      // Test the connection using API package
+      const response = await $fetch<{ connected: boolean }>(`${API_BASE_URL}/watttime/test-connection`, {
         method: 'GET',
         query: { token: tokenInfo.token }
       })
