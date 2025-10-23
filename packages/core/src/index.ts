@@ -4,12 +4,12 @@ import type {
   CalculationEngine,
   FormValidationResult,
   TokenCalculatorFormData
-} from '../../types/src/index'
+} from '@susai/types'
 import { 
   getAIModelById, 
   getHardwareConfigById, 
   getDataCenterRegionById 
-} from '../../config/src/index'
+} from '@susai/config'
 
 export class SustainableAICalculator implements CalculationEngine {
   /**
