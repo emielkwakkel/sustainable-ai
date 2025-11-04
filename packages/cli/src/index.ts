@@ -5,6 +5,7 @@ import chalk from 'chalk'
 import { calculateCommand } from './commands/calculate'
 import { configCommand } from './commands/config'
 import { listCommand } from './commands/list'
+import { tokenCommand, costCommand } from './commands/token'
 
 const program = new Command()
 
@@ -17,6 +18,8 @@ program
 program.addCommand(calculateCommand)
 program.addCommand(configCommand)
 program.addCommand(listCommand)
+program.addCommand(tokenCommand)
+program.addCommand(costCommand)
 
 // Global error handler
 program.configureHelp({

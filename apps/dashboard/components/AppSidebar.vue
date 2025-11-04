@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight, BarChart3, Calculator, Settings, FolderOpen } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, BarChart3, Calculator, Settings, FolderOpen, MessageSquare } from 'lucide-vue-next'
 import { cn } from '~/utils/cn'
 import { useAppPreferences } from '~/composables/useAppPreferences'
 
@@ -102,6 +102,12 @@ const menuItems: MenuItem[] = [
     label: 'Token Calculator',
     href: '/calculator',
     icon: Calculator
+  },
+  {
+    name: 'token-simulator',
+    label: 'Token Simulator',
+    href: '/token-simulator',
+    icon: MessageSquare
   },
   {
     name: 'settings',

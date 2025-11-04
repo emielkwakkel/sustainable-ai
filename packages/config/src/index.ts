@@ -182,3 +182,6 @@ export const getCarbonIntensityForRegion = (providerId: string, regionId: string
   const region = getDataCenterRegionById(providerId, regionId)
   return region?.carbonIntensity || null
 }
+
+// Export pricing configuration
+export * from './pricing'

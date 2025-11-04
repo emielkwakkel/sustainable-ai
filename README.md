@@ -8,9 +8,10 @@ The Sustainable AI Platform is a modular ecosystem consisting of:
 
 - **🌐 Dashboard** - Web interface for carbon intensity monitoring and calculations
 - **🧮 Core Engine** - Calculation engine for carbon emissions and energy consumption
-- **⚙️ Configuration** - PUE data, AI models, and hardware configurations
+- **⚙️ Configuration** - PUE data, AI models, hardware configurations, and pricing models
 - **🔌 API Server** - REST API for programmatic access
 - **💻 CLI Tool** - Command-line interface for CI/CD integration
+- **💬 Token Simulator** - Multi-agent conversation simulation with token tracking
 - **📦 Shared Types** - TypeScript definitions across all packages
 
 ## Architecture
@@ -18,9 +19,9 @@ The Sustainable AI Platform is a modular ecosystem consisting of:
 ```
 sustainable-ai-platform/
 ├── packages/
-│   ├── core/                    # Core calculation engine
-│   ├── config/                  # Configuration and PUE data
-│   ├── api/                     # REST API server
+│   ├── core/                    # Core calculation engine & tokenizer
+│   ├── config/                  # Configuration, PUE data, and pricing models
+│   ├── api/                     # REST API server with PostgreSQL database
 │   ├── cli/                     # Command-line interface
 │   └── types/                   # Shared TypeScript types
 ├── apps/
@@ -47,6 +48,21 @@ sustainable-ai-platform/
 - Include comparison metrics (e.g., "equivalent to running a lightbulb for X minutes")
 - Export functionality for calculation results
 
+### 💬 Token Simulator
+- Simulate single-agent and multi-agent conversations with manual token tracking
+- Create and manage multiple chat sessions with custom agent configurations
+- Add multiple rounds of prompts and responses for each agent
+- Real-time token counting using `js-tiktoken` for accurate token calculation
+- Cumulative token tracking across rounds (input includes all past answers from previous rounds)
+- Multi-agent token calculation: (single-agent input + total output) × number of agents per round
+- Cost calculation for GPT-4o, GPT-4.1, and GPT-5 with separate input/output pricing:
+  - **GPT-4o**: Input $2.50/1M, Output $10.00/1M tokens
+  - **GPT-4.1**: Input $2.00/1M, Output $8.00/1M tokens
+  - **GPT-5**: Input $1.25/1M, Output $10.00/1M tokens
+- Visual summary showing input tokens, output tokens, and costs per model
+- Persistent storage in PostgreSQL database
+- RESTful API endpoints for programmatic access
+
 ### ⚙️ WattTime Integration
 - Connect to WattTime API for real-time carbon intensity data
 - User registration and authentication
@@ -70,9 +86,11 @@ sustainable-ai-platform/
 - **Styling**: Tailwind CSS 4.1 with ChadCN components
 - **Language**: TypeScript
 - **Testing**: Vitest
+- **Database**: PostgreSQL (for Token Simulator data persistence)
 - **APIs**: WattTime API, Electricity Maps API
 - **State Management**: Nuxt's built-in useState
 - **Icons**: Lucide Vue Next
+- **Tokenization**: js-tiktoken for accurate token counting
 - **Package Management**: npm workspaces
 
 ## Getting Started
@@ -125,11 +143,31 @@ const result = sustainableAICalculator.calculateFromFormData({
 ### Configuration
 
 ```typescript
-import { aiModels, hardwareConfigs, dataCenterProviders } from '@susai/config'
+import { aiModels, hardwareConfigs, dataCenterProviders, modelPricing } from '@susai/config'
 
 // Access predefined configurations
 const gpt4 = aiModels.find(model => model.id === 'gpt-4')
 const a100 = hardwareConfigs.find(hw => hw.id === 'nvidia-a100')
+
+// Access pricing models
+const gpt4oPricing = modelPricing.find(p => p.model === 'gpt-4o')
+```
+
+### Token Simulator
+
+```typescript
+import { countTokens, calculateCost } from '@susai/core'
+
+// Count tokens in text
+const tokenCount = countTokens('Hello, world!', 'gpt-4')
+
+// Calculate costs for a conversation
+const costResult = calculateCost(
+  1000,  // inputTokens
+  500,   // outputTokens
+  'gpt-4o'  // model
+)
+// Returns: { inputCost, outputCost, totalCost, model }
 ```
 
 ### CLI Usage
@@ -161,6 +199,20 @@ curl http://localhost:3001/api/health
 curl -X POST http://localhost:3001/api/calculation/calculate \
   -H "Content-Type: application/json" \
   -d '{"formData": {"tokenCount": 1000, "model": "gpt-4", ...}}'
+
+# Token Simulator endpoints
+# Get all chats
+curl http://localhost:3001/api/token-simulator/chats?user_id=<user_id>
+
+# Create a new chat
+curl -X POST http://localhost:3001/api/token-simulator/chats \
+  -H "Content-Type: application/json" \
+  -d '{"name": "My Chat", "user_id": "<user_id>"}'
+
+# Add a round to a chat
+curl -X POST http://localhost:3001/api/token-simulator/chats/<chat_id>/rounds \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Hello", "responses": [{"agent_id": "<agent_id>", "response_text": "Hi there!"}]}'
 ```
 
 ## Available Scripts
@@ -240,6 +292,7 @@ The platform follows a prioritized roadmap:
 4. ✅ **App Structure** - Navigation and layout improvements
 5. ✅ **API Server** - REST API for programmatic access
 6. ✅ **CLI Tool** - Command-line interface for CI/CD integration
+7. ✅ **Token Simulator** - Multi-agent conversation simulation with token tracking and cost calculation
 
 ## Contributing
 

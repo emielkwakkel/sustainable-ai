@@ -128,6 +128,13 @@ sustainable-ai-platform/
 └── AGENTS.md                   # Agent guidelines
 ```
 
+## Agent Guidelines
+
+Minimize response lengths in order to reduce token usage.
+
+Do not answer like this: "I see that the dependencies are not installed. I'm going to install dependencies by running `npm install`"
+Preferred answer: "Installing dependencies"
+
 ## Development Guidelines
 
 ### Architecture Decisions

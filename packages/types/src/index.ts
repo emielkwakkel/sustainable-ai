@@ -240,3 +240,116 @@ export interface CalculationEngine {
   calculateEmissions(params: CalculationParams): CalculationResult
   validateParams(params: CalculationParams): FormValidationResult
 }
+
+// Token Simulator Types
+export interface Chat {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+  user_id: string
+}
+
+export interface Agent {
+  id: string
+  chat_id: string
+  name: string
+  created_at: string
+  display_order: number
+}
+
+export interface Round {
+  id: string
+  chat_id: string
+  round_number: number
+  prompt: string
+  prompt_tokens: number
+  actual_input_tokens?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AgentResponse {
+  id: string
+  round_id: string
+  agent_id: string
+  response_text: string
+  token_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface RoundWithResponses extends Round {
+  responses: (AgentResponse & { agent: Agent })[]
+}
+
+export interface ChatWithDetails extends Chat {
+  agents: Agent[]
+  rounds: RoundWithResponses[]
+  summary?: ChatSummary
+}
+
+export interface ChatSummary {
+  chat_id: string
+  total_input_tokens: number
+  total_output_tokens: number
+  total_tokens: number
+  gpt4o_input_cost: number
+  gpt4o_output_cost: number
+  gpt4o_total_cost: number
+  gpt41_input_cost?: number
+  gpt41_output_cost?: number
+  gpt41_total_cost?: number
+  gpt5_input_cost?: number
+  gpt5_output_cost?: number
+  gpt5_total_cost?: number
+  updated_at: string
+}
+
+export interface TokenCountResult {
+  count: number
+  model: string
+}
+
+export interface CostCalculationResult {
+  inputCost: number
+  outputCost: number
+  totalCost: number
+  model: 'gpt-4o' | 'gpt-4.1' | 'gpt-5'
+}
+
+export interface CreateChatRequest {
+  name?: string
+  user_id: string
+}
+
+export interface UpdateChatRequest {
+  name?: string
+}
+
+export interface CreateAgentRequest {
+  name?: string
+  chat_id: string
+}
+
+export interface UpdateAgentRequest {
+  name?: string
+  display_order?: number
+}
+
+export interface CreateRoundRequest {
+  chat_id: string
+  prompt: string
+  responses: {
+    agent_id: string
+    response_text: string
+  }[]
+}
+
+export interface UpdateRoundRequest {
+  prompt?: string
+  responses?: {
+    agent_id: string
+    response_text: string
+  }[]
+}

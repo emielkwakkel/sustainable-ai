@@ -13,6 +13,7 @@ import { watttimeRoutes } from './routes/watttime'
 import projectsRoutes from './routes/projects'
 import calculationsRoutes from './routes/calculations'
 import cursorImportRoutes from './routes/cursor-import'
+import { tokenSimulatorRoutes } from './routes/token-simulator'
 
 // Load environment variables
 dotenv.config()
@@ -41,6 +42,7 @@ app.use('/api/watttime', watttimeRoutes)
 app.use('/api/projects', projectsRoutes)
 app.use('/api/calculations', calculationsRoutes)
 app.use('/api/cursor-import', cursorImportRoutes)
+app.use('/api/token-simulator', tokenSimulatorRoutes)
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -85,6 +87,7 @@ if (require.main === module) {
         console.log(`🧮 Calculation API: https://localhost:${PORT}/api/calculation`)
         console.log(`⚙️  Config API: https://localhost:${PORT}/api/config`)
         console.log(`🌍 WattTime API: https://localhost:${PORT}/api/watttime`)
+        console.log(`💬 Token Simulator API: https://localhost:${PORT}/api/token-simulator`)
       })
     } else {
       // Fallback to HTTP if no certificates
@@ -95,6 +98,7 @@ if (require.main === module) {
         console.log(`🧮 Calculation API: http://localhost:${PORT}/api/calculation`)
         console.log(`⚙️  Config API: http://localhost:${PORT}/api/config`)
         console.log(`🌍 WattTime API: http://localhost:${PORT}/api/watttime`)
+        console.log(`💬 Token Simulator API: http://localhost:${PORT}/api/token-simulator`)
       })
     }
   } catch (error) {

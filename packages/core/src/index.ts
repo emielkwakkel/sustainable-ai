@@ -155,3 +155,12 @@ export class SustainableAICalculator implements CalculationEngine {
 export const sustainableAICalculator = new SustainableAICalculator()
 
 // Export the class for custom instances (already exported above)
+
+// Export tokenizer functions
+export {
+  countTokens,
+  calculateCost,
+  calculateRoundInputTokens,
+  calculateChatTokens,
+  type TokenizerModel
+} from './tokenizer'
