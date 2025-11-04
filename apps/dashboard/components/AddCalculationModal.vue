@@ -124,8 +124,8 @@
               v-model="formData.data_center_region"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="aws-us-east-1">AWS US East (N. Virginia)</option>
-              <option value="aws-us-west-2">AWS US West (Oregon)</option>
+              <option value="aws-us-east">AWS US East (N. Virginia)</option>
+              <option value="aws-us-west">AWS US West (Oregon)</option>
               <option value="google-oregon">Google Cloud Oregon</option>
               <option value="google-iowa">Google Cloud Iowa</option>
             </select>
@@ -192,7 +192,7 @@ const formData = ref({
   context_window: 1250,
   hardware: 'nvidia-a100',
   data_center_provider: 'aws',
-  data_center_region: 'aws-us-east-1'
+  data_center_region: 'aws-us-east'
 })
 
 // Initialize form with project preset if available
@@ -287,7 +287,7 @@ const handleSubmit = async () => {
         context_window: 1250,
         hardware: 'nvidia-a100',
         data_center_provider: 'aws',
-        data_center_region: 'aws-us-east-1'
+        data_center_region: 'aws-us-east'
       }
 
       // Emit success

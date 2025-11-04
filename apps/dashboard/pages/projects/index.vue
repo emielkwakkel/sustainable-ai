@@ -179,8 +179,16 @@ const handleProjectUpdated = async () => {
   await fetchProjects()
 }
 
-const formatNumber = (value: number, decimals: number = 2): string => {
-  return value.toFixed(decimals)
+const formatNumber = (value: number | string | null | undefined, decimals: number = 2): string => {
+  if (value === null || value === undefined) {
+    return '0'
+  }
+  // Convert string to number if needed
+  const numValue = typeof value === 'string' ? parseFloat(value) : value
+  if (isNaN(numValue)) {
+    return '0'
+  }
+  return numValue.toFixed(decimals)
 }
 
 const formatDate = (dateString: string): string => {

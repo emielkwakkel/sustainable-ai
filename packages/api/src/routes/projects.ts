@@ -1,87 +1,26 @@
 import { Router } from 'express'
 import { Pool } from 'pg'
-import fs from 'fs'
-import path from 'path'
 
 const router = Router()
 
-// Database connection - use SQLite for development if PostgreSQL is not available
-let pool: Pool
-let useSQLite = false
+// PostgreSQL database connection - required
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'sustainable_ai_db',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'password',
+})
 
-try {
-  // Try PostgreSQL first
-  pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME || 'sustainable_ai_db',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'password',
+// Test PostgreSQL connection on startup
+pool.query('SELECT 1')
+  .then(() => {
+    console.log('PostgreSQL connection established successfully')
   })
-  
-  // Test connection
-  pool.query('SELECT 1').catch(() => {
-    console.log('PostgreSQL not available, using SQLite for development')
-    useSQLite = true
+  .catch((error) => {
+    console.error('Failed to connect to PostgreSQL:', error)
+    process.exit(1)
   })
-} catch (error) {
-  console.log('PostgreSQL not available, using SQLite for development')
-  useSQLite = true
-}
-
-// Simple in-memory storage for development
-const projects: any[] = []
-let nextId = 1
-
-// SQLite-like query function
-const query = async (sql: string, params: any[] = []) => {
-  if (useSQLite) {
-    // Simple in-memory implementation for development
-    if (sql.includes('SELECT EXISTS')) {
-      return { rows: [{ exists: true }] }
-    }
-    if (sql.includes('SELECT') && sql.includes('FROM projects')) {
-      return { rows: projects }
-    }
-    if (sql.includes('INSERT INTO projects')) {
-      const newProject = {
-        id: nextId++,
-        name: params[0],
-        description: params[1],
-        calculation_preset_id: params[2],
-        user_id: params[3],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      projects.push(newProject)
-      return { rows: [newProject] }
-    }
-    if (sql.includes('UPDATE projects')) {
-      const id = params[3]
-      const project = projects.find(p => p.id == id)
-      if (project) {
-        if (params[0]) project.name = params[0]
-        if (params[1]) project.description = params[1]
-        if (params[2]) project.calculation_preset_id = params[2]
-        project.updated_at = new Date().toISOString()
-        return { rows: [project] }
-      }
-      return { rows: [] }
-    }
-    if (sql.includes('DELETE FROM projects')) {
-      const id = params[0]
-      const index = projects.findIndex(p => p.id == id)
-      if (index !== -1) {
-        projects.splice(index, 1)
-        return { rows: [{ id }] }
-      }
-      return { rows: [] }
-    }
-    return { rows: [] }
-  } else {
-    return await pool.query(sql, params)
-  }
-}
 
 // Get all projects for a user
 router.get('/', async (req, res) => {
@@ -93,7 +32,7 @@ router.get('/', async (req, res) => {
     }
 
     // First check if projects table exists
-    const tableCheck = await query(`
+    const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
@@ -106,7 +45,7 @@ router.get('/', async (req, res) => {
       return res.json({ success: true, data: [] })
     }
 
-    const result = await query(`
+    const result = await pool.query(`
       SELECT 
         p.*,
         COUNT(c.id) as calculation_count,
@@ -137,7 +76,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // Get project details
-    const projectResult = await query(`
+    const projectResult = await pool.query(`
       SELECT * FROM projects 
       WHERE id = $1 AND user_id = $2
     `, [id, user_id])
@@ -146,40 +85,13 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Project not found' })
     }
 
-    // Get project analytics
-    let analyticsResult
-    if (useSQLite) {
-      // SQLite fallback - calculate analytics manually
-      const analyticsData = await query(`
-        SELECT 
-          COUNT(*) as calculationCount,
-          MIN(created_at) as startDate,
-          MAX(created_at) as endDate
-        FROM calculations 
-        WHERE project_id = ?
-      `, [id])
-      
-      analyticsResult = {
-        rows: [{
-          totalEmissionsGrams: 0,
-          totalEnergyJoules: 0,
-          averageEmissionsPerToken: 0,
-          calculationCount: analyticsData.rows[0]?.calculationCount || 0,
-          dateRange: {
-            start: analyticsData.rows[0]?.startDate,
-            end: analyticsData.rows[0]?.endDate
-          }
-        }]
-      }
-    } else {
-      // PostgreSQL - use the function
-      analyticsResult = await query(`
-        SELECT * FROM get_project_analytics($1)
-      `, [id])
-    }
+    // Get project analytics using PostgreSQL function
+    const analyticsResult = await pool.query(`
+      SELECT * FROM get_project_analytics($1)
+    `, [id])
 
     // Get recent calculations
-    const calculationsResult = await query(`
+    const calculationsResult = await pool.query(`
       SELECT 
         id,
         token_count,
@@ -220,7 +132,7 @@ router.post('/', async (req, res) => {
     }
 
     // First check if projects table exists
-    const tableCheck = await query(`
+    const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
@@ -235,7 +147,7 @@ router.post('/', async (req, res) => {
       })
     }
 
-    const result = await query(`
+    const result = await pool.query(`
       INSERT INTO projects (name, description, calculation_preset_id, user_id)
       VALUES ($1, $2, $3, $4)
       RETURNING *
@@ -259,7 +171,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'user_id is required' })
     }
 
-    const result = await query(`
+    const result = await pool.query(`
       UPDATE projects 
       SET name = COALESCE($1, name),
           description = COALESCE($2, description),
@@ -290,7 +202,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'user_id is required' })
     }
 
-    const result = await query(`
+    const result = await pool.query(`
       DELETE FROM projects 
       WHERE id = $1 AND user_id = $2
       RETURNING id
@@ -318,7 +230,7 @@ router.get('/:id/timeline', async (req, res) => {
     }
 
     // Verify project belongs to user
-    const projectCheck = await query(`
+    const projectCheck = await pool.query(`
       SELECT id FROM projects WHERE id = $1 AND user_id = $2
     `, [id, user_id])
 
@@ -326,7 +238,7 @@ router.get('/:id/timeline', async (req, res) => {
       return res.status(404).json({ error: 'Project not found' })
     }
 
-    const result = await query(`
+    const result = await pool.query(`
       SELECT * FROM get_project_emissions_timeline($1, $2, $3, $4)
     `, [id, start_date, end_date, interval])
 
@@ -348,7 +260,7 @@ router.post('/:id/recalculate', async (req, res) => {
     }
 
     // Verify project belongs to user
-    const projectCheck = await query(`
+    const projectCheck = await pool.query(`
       SELECT id FROM projects WHERE id = $1 AND user_id = $2
     `, [id, user_id])
 
@@ -356,7 +268,7 @@ router.post('/:id/recalculate', async (req, res) => {
       return res.status(404).json({ error: 'Project not found' })
     }
 
-    const result = await query(`
+    const result = await pool.query(`
       SELECT recalculate_project_emissions($1, $2) as updated_count
     `, [id, algorithm_version || '1.0.0'])
 
