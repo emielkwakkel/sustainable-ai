@@ -74,20 +74,27 @@ router.get('/project/:projectId', async (req, res) => {
       }
       
       if (tagIdsArray.length > 0) {
+        // Build IN clause with individual parameters
+        const inPlaceholders = tagIdsArray.map((_, i) => `$${paramIndex + i}`).join(', ')
         whereConditions.push(`c.id IN (
           SELECT DISTINCT calculation_id 
           FROM calculation_tags 
-          WHERE tag_id = ANY($${paramIndex}::INTEGER[])
+          WHERE tag_id IN (${inPlaceholders})
         )`)
-        queryParams.push(tagIdsArray)
-        paramIndex++
+        queryParams.push(...tagIdsArray)
+        paramIndex += tagIdsArray.length
       }
     }
 
     const whereClause = whereConditions.join(' AND ')
 
+    // Build final params array with limit and offset
+    const finalParams = [...queryParams, parseInt(limit as string), parseInt(offset as string)]
+    const limitParamIndex = paramIndex
+    const offsetParamIndex = paramIndex + 1
+
     // Get calculations with tags
-    const result = await pool.query(`
+    const queryString = `
       SELECT 
         c.id,
         c.token_count,
@@ -119,21 +126,26 @@ router.get('/project/:projectId', async (req, res) => {
       WHERE ${whereClause}
       GROUP BY c.id
       ORDER BY c.created_at DESC 
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `, [...queryParams, parseInt(limit as string), parseInt(offset as string)])
+      LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
+    `
+    
+    const result = await pool.query(queryString, finalParams)
 
-    // Get total count with same filters (without tag_ids in queryParams since it's already there)
-    const countParams = [...queryParams]
+    // Get total count with same filters
+    // Rebuild params without tagIdsArray to avoid duplication
+    const countParams: any[] = [projectIdInt]
     const countWhereConditions = ['c.project_id = $1']
     let countParamIndex = 2
     
     if (start_date) {
       countWhereConditions.push(`c.created_at >= $${countParamIndex}`)
+      countParams.push(new Date(start_date as string))
       countParamIndex++
     }
     
     if (end_date) {
       countWhereConditions.push(`c.created_at <= $${countParamIndex}`)
+      countParams.push(new Date(end_date as string))
       countParamIndex++
     }
     
@@ -151,11 +163,14 @@ router.get('/project/:projectId', async (req, res) => {
       }
       
       if (tagIdsArray.length > 0) {
+        // Build IN clause with individual parameters
+        const inPlaceholders = tagIdsArray.map((_, i) => `$${countParamIndex + i}`).join(', ')
         countQuery += `
           INNER JOIN calculation_tags ct ON c.id = ct.calculation_id
-          WHERE ${countWhereConditions.join(' AND ')} AND ct.tag_id = ANY($${countParamIndex}::INTEGER[])
+          WHERE ${countWhereConditions.join(' AND ')} AND ct.tag_id IN (${inPlaceholders})
         `
-        countParams.push(tagIdsArray)
+        countParams.push(...tagIdsArray)
+        countParamIndex += tagIdsArray.length
       } else {
         countQuery += ` WHERE ${countWhereConditions.join(' AND ')}`
       }
