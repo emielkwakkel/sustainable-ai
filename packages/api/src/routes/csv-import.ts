@@ -353,15 +353,37 @@ router.post('/import', async (req, res) => {
             projectPresetId
           )
 
-          // Insert into database
+          // Parse date from CSV row (ISO 8601 format)
+          // Remove quotes if present and parse the date
+          const dateString = row.Date?.replace(/^"|"$/g, '').trim() || ''
+          let createdAt: Date
+          
+          if (dateString) {
+            const csvDate = new Date(dateString)
+            if (isNaN(csvDate.getTime())) {
+              console.warn(`Invalid date format: ${row.Date}, using current date`)
+              createdAt = new Date()
+            } else {
+              createdAt = csvDate
+            }
+          } else {
+            console.warn(`Missing date in CSV row, using current date`)
+            createdAt = new Date()
+          }
+          
+          // Log for debugging (remove in production)
+          console.log(`CSV Date: ${row.Date} -> Parsed: ${createdAt.toISOString()}`)
+
+          // Insert into database with date from CSV
+          // Pass Date object directly - pg library will handle conversion
           const result = await pool.query(`
             INSERT INTO calculations (
               project_id, token_count, model, context_length, context_window,
               hardware, data_center_provider, data_center_region, custom_pue,
-              custom_carbon_intensity, calculation_parameters, results
+              custom_carbon_intensity, calculation_parameters, results, created_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            RETURNING id
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING id, created_at
           `, [
             calculation.project_id,
             calculation.token_count,
@@ -375,6 +397,7 @@ router.post('/import', async (req, res) => {
             calculation.custom_carbon_intensity,
             JSON.stringify(calculation.calculation_parameters),
             JSON.stringify(calculation.results),
+            createdAt, // Pass Date object directly
           ])
 
           imported.push({

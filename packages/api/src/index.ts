@@ -15,6 +15,7 @@ import calculationsRoutes from './routes/calculations'
 import cursorImportRoutes from './routes/cursor-import'
 import csvImportRoutes from './routes/csv-import'
 import { tokenSimulatorRoutes } from './routes/token-simulator'
+import tagsRoutes from './routes/tags'
 
 // Load environment variables
 dotenv.config()
@@ -45,6 +46,7 @@ app.use('/api/calculations', calculationsRoutes)
 app.use('/api/cursor-import', cursorImportRoutes)
 app.use('/api/csv-import', csvImportRoutes)
 app.use('/api/token-simulator', tokenSimulatorRoutes)
+app.use('/api/tags', tagsRoutes)
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

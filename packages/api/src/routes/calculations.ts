@@ -12,11 +12,11 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'password',
 })
 
-// Get calculations for a project
+// Get calculations for a project with filtering
 router.get('/project/:projectId', async (req, res) => {
   try {
     const { projectId } = req.params
-    const { user_id, limit = 50, offset = 0 } = req.query
+    const { user_id, limit = 50, offset = 0, start_date, end_date, tag_ids } = req.query
 
     if (!user_id) {
       return res.status(400).json({ 
@@ -46,37 +46,135 @@ router.get('/project/:projectId', async (req, res) => {
       })
     }
 
+    // Build WHERE clause with filters
+    const whereConditions = ['c.project_id = $1']
+    const queryParams: any[] = [projectIdInt]
+    let paramIndex = 2
+
+    if (start_date) {
+      whereConditions.push(`c.created_at >= $${paramIndex}`)
+      queryParams.push(new Date(start_date as string))
+      paramIndex++
+    }
+
+    if (end_date) {
+      whereConditions.push(`c.created_at <= $${paramIndex}`)
+      queryParams.push(new Date(end_date as string))
+      paramIndex++
+    }
+
+    // Handle tag filtering - Express parses multiple query params with same name as array
+    if (tag_ids) {
+      let tagIdsArray: number[] = []
+      if (Array.isArray(tag_ids)) {
+        tagIdsArray = tag_ids.map(id => parseInt(String(id))).filter(id => !isNaN(id))
+      } else if (typeof tag_ids === 'string') {
+        // Handle comma-separated string or single value
+        tagIdsArray = tag_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+      }
+      
+      if (tagIdsArray.length > 0) {
+        whereConditions.push(`c.id IN (
+          SELECT DISTINCT calculation_id 
+          FROM calculation_tags 
+          WHERE tag_id = ANY($${paramIndex}::INTEGER[])
+        )`)
+        queryParams.push(tagIdsArray)
+        paramIndex++
+      }
+    }
+
+    const whereClause = whereConditions.join(' AND ')
+
+    // Get calculations with tags
     const result = await pool.query(`
       SELECT 
-        id,
-        token_count,
-        model,
-        context_length,
-        context_window,
-        hardware,
-        data_center_provider,
-        data_center_region,
-        custom_pue,
-        custom_carbon_intensity,
-        calculation_parameters,
-        results,
-        created_at,
-        updated_at
-      FROM calculations 
-      WHERE project_id = $1 
-      ORDER BY created_at DESC 
-      LIMIT $2 OFFSET $3
-    `, [projectIdInt, limit, offset])
+        c.id,
+        c.token_count,
+        c.model,
+        c.context_length,
+        c.context_window,
+        c.hardware,
+        c.data_center_provider,
+        c.data_center_region,
+        c.custom_pue,
+        c.custom_carbon_intensity,
+        c.calculation_parameters,
+        c.results,
+        c.created_at,
+        c.updated_at,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', t.id,
+              'name', t.name,
+              'color', t.color
+            )
+          ) FILTER (WHERE t.id IS NOT NULL),
+          '[]'::json
+        ) as tags
+      FROM calculations c
+      LEFT JOIN calculation_tags ct ON c.id = ct.calculation_id
+      LEFT JOIN tags t ON ct.tag_id = t.id
+      WHERE ${whereClause}
+      GROUP BY c.id
+      ORDER BY c.created_at DESC 
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, [...queryParams, parseInt(limit as string), parseInt(offset as string)])
 
-    // Get total count
-    const countResult = await pool.query(`
-      SELECT COUNT(*) as total FROM calculations WHERE project_id = $1
-    `, [projectIdInt])
+    // Get total count with same filters (without tag_ids in queryParams since it's already there)
+    const countParams = [...queryParams]
+    const countWhereConditions = ['c.project_id = $1']
+    let countParamIndex = 2
+    
+    if (start_date) {
+      countWhereConditions.push(`c.created_at >= $${countParamIndex}`)
+      countParamIndex++
+    }
+    
+    if (end_date) {
+      countWhereConditions.push(`c.created_at <= $${countParamIndex}`)
+      countParamIndex++
+    }
+    
+    let countQuery = `
+      SELECT COUNT(DISTINCT c.id) as total 
+      FROM calculations c
+    `
+    
+    if (tag_ids) {
+      let tagIdsArray: number[] = []
+      if (Array.isArray(tag_ids)) {
+        tagIdsArray = tag_ids.map(id => parseInt(String(id))).filter(id => !isNaN(id))
+      } else if (typeof tag_ids === 'string') {
+        tagIdsArray = tag_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+      }
+      
+      if (tagIdsArray.length > 0) {
+        countQuery += `
+          INNER JOIN calculation_tags ct ON c.id = ct.calculation_id
+          WHERE ${countWhereConditions.join(' AND ')} AND ct.tag_id = ANY($${countParamIndex}::INTEGER[])
+        `
+        countParams.push(tagIdsArray)
+      } else {
+        countQuery += ` WHERE ${countWhereConditions.join(' AND ')}`
+      }
+    } else {
+      countQuery += ` WHERE ${countWhereConditions.join(' AND ')}`
+    }
+    
+    const countResult = await pool.query(countQuery, countParams)
+
+    // Process results to format tags properly
+    const calculations = result.rows.map(row => ({
+      ...row,
+      tags: Array.isArray(row.tags) ? row.tags.filter((tag: any) => tag.id !== null) : []
+    }))
 
     res.json({ 
       success: true, 
       data: {
-        calculations: result.rows
+        calculations
       },
       pagination: {
         total: parseInt(countResult.rows[0].total),
@@ -168,7 +266,18 @@ router.put('/:id', async (req, res) => {
     } = req.body
 
     if (!user_id) {
-      return res.status(400).json({ error: 'user_id is required' })
+      return res.status(400).json({ 
+        success: false,
+        error: 'user_id is required' 
+      })
+    }
+
+    const calculationIdInt = parseInt(id, 10)
+    if (isNaN(calculationIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid calculation ID' 
+      })
     }
 
     // Verify calculation belongs to user's project
@@ -176,10 +285,13 @@ router.put('/:id', async (req, res) => {
       SELECT c.id FROM calculations c
       JOIN projects p ON c.project_id = p.id
       WHERE c.id = $1 AND p.user_id = $2
-    `, [id, user_id])
+    `, [calculationIdInt, user_id])
 
     if (calculationCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Calculation not found' })
+      return res.status(404).json({ 
+        success: false,
+        error: 'Calculation not found' 
+      })
     }
 
     const result = await pool.query(`
@@ -202,13 +314,16 @@ router.put('/:id', async (req, res) => {
     `, [
       token_count, model, context_length, context_window,
       hardware, data_center_provider, data_center_region, custom_pue,
-      custom_carbon_intensity, calculation_parameters, results, id
+      custom_carbon_intensity, calculation_parameters, results, calculationIdInt
     ])
 
     res.json({ success: true, data: result.rows[0] })
   } catch (error) {
     console.error('Error updating calculation:', error)
-    res.status(500).json({ error: 'Failed to update calculation' })
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update calculation' 
+    })
   }
 })
 
@@ -329,6 +444,110 @@ router.post('/bulk-recalculate', async (req, res) => {
   } catch (error) {
     console.error('Error bulk recalculating:', error)
     res.status(500).json({ error: 'Failed to bulk recalculate calculations' })
+  }
+})
+
+// Delete a calculation
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { user_id } = req.query
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id is required'
+      })
+    }
+
+    const calculationIdInt = parseInt(id, 10)
+    if (isNaN(calculationIdInt)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid calculation ID'
+      })
+    }
+
+    // Verify calculation belongs to user's project
+    const calcCheck = await pool.query(`
+      SELECT c.id
+      FROM calculations c
+      JOIN projects p ON c.project_id = p.id
+      WHERE c.id = $1 AND p.user_id = $2
+    `, [calculationIdInt, user_id])
+
+    if (calcCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Calculation not found'
+      })
+    }
+
+    await pool.query(`
+      DELETE FROM calculations WHERE id = $1
+    `, [calculationIdInt])
+
+    res.json({
+      success: true,
+      message: 'Calculation deleted successfully'
+    })
+  } catch (error) {
+    console.error('Error deleting calculation:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete calculation'
+    })
+  }
+})
+
+// Bulk delete calculations
+router.post('/bulk-delete', async (req, res) => {
+  try {
+    const { calculation_ids, user_id } = req.body
+
+    if (!calculation_ids || !Array.isArray(calculation_ids) || calculation_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'calculation_ids array is required'
+      })
+    }
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id is required'
+      })
+    }
+
+    // Verify all calculations belong to user's projects
+    const calcCheck = await pool.query(`
+      SELECT c.id
+      FROM calculations c
+      JOIN projects p ON c.project_id = p.id
+      WHERE c.id = ANY($1::INTEGER[]) AND p.user_id = $2
+    `, [calculation_ids, user_id])
+
+    if (calcCheck.rows.length !== calculation_ids.length) {
+      return res.status(403).json({
+        success: false,
+        error: 'Some calculations not found or access denied'
+      })
+    }
+
+    await pool.query(`
+      DELETE FROM calculations WHERE id = ANY($1::INTEGER[])
+    `, [calculation_ids])
+
+    res.json({
+      success: true,
+      message: `${calculation_ids.length} calculation(s) deleted successfully`
+    })
+  } catch (error) {
+    console.error('Error bulk deleting calculations:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete calculations'
+    })
   }
 })
 

@@ -1,3 +1,4 @@
+import { readonly } from 'vue'
 import type { TokenCalculatorFormData } from '~/types/watttime'
 
 export interface ProjectPreset {

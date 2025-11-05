@@ -5,7 +5,7 @@
         <div>
           <p class="text-sm text-red-700 dark:text-red-300">Total CO₂ Emissions</p>
           <p class="text-2xl font-bold text-red-900 dark:text-red-200">
-            {{ formatNumber(analytics.totalEmissionsGrams, 2) }}g
+            {{ formatCO2(analytics.totalEmissionsGrams) }}
           </p>
         </div>
         <TrendingUp class="w-8 h-8 text-red-600" />
@@ -17,7 +17,7 @@
         <div>
           <p class="text-sm text-blue-700 dark:text-blue-300">Total Energy</p>
           <p class="text-2xl font-bold text-blue-900 dark:text-blue-200">
-            {{ formatNumber(analytics.totalEnergyJoules / 3600000, 4) }}kWh
+            {{ formatEnergy(analytics.totalEnergyJoules) }}
           </p>
         </div>
         <Zap class="w-8 h-8 text-blue-600" />
@@ -41,15 +41,12 @@
 <script setup lang="ts">
 import { TrendingUp, Zap, Calculator } from 'lucide-vue-next'
 import type { ProjectAnalytics } from '~/types/watttime'
+import { formatCO2, formatEnergy } from '~/utils/formatting'
 
 interface Props {
   analytics: ProjectAnalytics | null
 }
 
 defineProps<Props>()
-
-const formatNumber = (value: number, decimals: number = 2): string => {
-  return value.toFixed(decimals)
-}
 </script>
 

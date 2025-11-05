@@ -219,7 +219,19 @@ router.put('/:id', async (req, res) => {
     const { name, description, calculation_preset_id, user_id } = req.body
 
     if (!user_id) {
-      return res.status(400).json({ error: 'user_id is required' })
+      return res.status(400).json({ 
+        success: false,
+        error: 'user_id is required' 
+      })
+    }
+
+    // Convert id to integer
+    const projectIdInt = parseInt(id, 10)
+    if (isNaN(projectIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid project ID' 
+      })
     }
 
     const result = await pool.query(`
@@ -230,16 +242,22 @@ router.put('/:id', async (req, res) => {
           updated_at = NOW()
       WHERE id = $4 AND user_id = $5
       RETURNING *
-    `, [name, description, calculation_preset_id, id, user_id])
+    `, [name, description, calculation_preset_id, projectIdInt, user_id])
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' })
+      return res.status(404).json({ 
+        success: false,
+        error: 'Project not found' 
+      })
     }
 
     res.json({ success: true, data: result.rows[0] })
   } catch (error) {
     console.error('Error updating project:', error)
-    res.status(500).json({ error: 'Failed to update project' })
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update project' 
+    })
   }
 })
 

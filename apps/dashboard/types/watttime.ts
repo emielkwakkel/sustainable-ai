@@ -302,6 +302,14 @@ export interface Project {
   avg_emissions_per_token?: number
 }
 
+export interface Tag {
+  id: number
+  name: string
+  color: string
+  created_at?: string
+  updated_at?: string
+}
+
 export interface Calculation {
   id: string
   project_id: string
@@ -318,6 +326,7 @@ export interface Calculation {
   results: CalculationResult
   created_at: string
   updated_at: string
+  tags?: readonly Tag[]
 }
 
 export interface ProjectAnalytics {

@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import * as d3 from 'd3'
-import type { Calculation } from '~/types/watttime'
+import type { Calculation, Tag } from '~/types/watttime'
 
 interface Props {
   calculations: readonly Calculation[]
@@ -102,7 +102,9 @@ function renderEmissionsChart() {
     .attr('fill', '#ef4444')
 
   // Add axes
-  const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(d3.timeFormat('%m/%d') as any)
+  // Format: "Nov 4 22:09" to show date and time
+  const dateFormat = d3.timeFormat('%b %d %H:%M')
+  const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(dateFormat as any)
   const yAxis = d3.axisLeft(yScale).ticks(5)
 
   g.append('g')
@@ -194,7 +196,9 @@ function renderEnergyChart() {
     .attr('fill', '#3b82f6')
 
   // Add axes
-  const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(d3.timeFormat('%m/%d') as any)
+  // Format: "Nov 4 22:09" to show date and time
+  const dateFormat = d3.timeFormat('%b %d %H:%M')
+  const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(dateFormat as any)
   const yAxis = d3.axisLeft(yScale).ticks(5)
 
   g.append('g')

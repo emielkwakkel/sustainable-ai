@@ -14,7 +14,14 @@ const fetchApi = async (url: string, options?: any): Promise<any> => {
       const searchParams = new URLSearchParams()
       Object.entries(options.query).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          searchParams.append(key, String(value))
+          // Handle arrays by appending multiple values with same key
+          if (Array.isArray(value)) {
+            value.forEach(item => {
+              searchParams.append(key, String(item))
+            })
+          } else {
+            searchParams.append(key, String(value))
+          }
         }
       })
       const queryString = searchParams.toString()
@@ -83,21 +90,40 @@ export const useProject = (projectId: string) => {
     }
   }
 
-  const fetchCalculations = async (limit = 50, offset = 0) => {
+  const totalCount = ref(0)
+
+  const fetchCalculations = async (limit = 50, offset = 0, filters?: {
+    start_date?: string
+    end_date?: string
+    tag_ids?: number[]
+  }) => {
     loading.value = true
     error.value = null
 
     try {
+      const query: any = { 
+        user_id: 'default-user', // TODO: Get from auth
+        limit,
+        offset
+      }
+
+      if (filters?.start_date) {
+        query.start_date = filters.start_date
+      }
+      if (filters?.end_date) {
+        query.end_date = filters.end_date
+      }
+      if (filters?.tag_ids && filters.tag_ids.length > 0) {
+        query.tag_ids = filters.tag_ids
+      }
+
       const response = await fetchApi(`/api/calculations/project/${projectId}`, {
-        query: { 
-          user_id: 'default-user', // TODO: Get from auth
-          limit,
-          offset
-        }
+        query
       }) as any
 
       if (response && response.success) {
         calculations.value = response.data.calculations || []
+        totalCount.value = response.pagination?.total || 0
       } else {
         console.error('Calculations API response error:', response)
         error.value = response?.error || 'Failed to fetch calculations'
@@ -270,10 +296,40 @@ export const useProject = (projectId: string) => {
     }
   }
 
+  const bulkDeleteCalculations = async (calculationIds: string[]) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await fetchApi('/api/calculations/bulk-delete', {
+        method: 'POST',
+        body: {
+          calculation_ids: calculationIds.map(id => parseInt(id)),
+          user_id: 'default-user' // TODO: Get from auth
+        }
+      })
+
+      if (response.success) {
+        await fetchProject()
+        await fetchCalculations()
+        return true
+      } else {
+        throw new Error(response.error || 'Failed to delete calculations')
+      }
+    } catch (err) {
+      console.error('Error bulk deleting calculations:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to delete calculations'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     project: readonly(project),
     analytics: readonly(analytics),
     calculations: readonly(calculations),
+    totalCount: readonly(totalCount),
     loading: readonly(loading),
     error: readonly(error),
     fetchProject,
@@ -281,6 +337,7 @@ export const useProject = (projectId: string) => {
     addCalculation,
     updateCalculation,
     deleteCalculation,
+    bulkDeleteCalculations,
     importFromCursor,
     recalculateProject
   }
