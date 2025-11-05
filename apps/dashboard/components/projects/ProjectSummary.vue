@@ -27,9 +27,12 @@
     <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-6">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-green-700 dark:text-green-300">Calculations</p>
+          <p class="text-sm text-green-700 dark:text-green-300">Total Tokens</p>
           <p class="text-2xl font-bold text-green-900 dark:text-green-200">
-            {{ analytics.calculationCount }}
+            {{ formatNumber(totalTokens) }}
+          </p>
+          <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+            Avg: {{ formatNumber(averageTokensPerTransaction) }} per transaction
           </p>
         </div>
         <Calculator class="w-8 h-8 text-green-600" />
@@ -39,14 +42,36 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { TrendingUp, Zap, Calculator } from 'lucide-vue-next'
-import type { ProjectAnalytics } from '~/types/watttime'
+import type { ProjectAnalytics, Calculation } from '~/types/watttime'
 import { formatCO2, formatEnergy } from '~/utils/formatting'
 
 interface Props {
   analytics: ProjectAnalytics | null
+  calculations?: readonly Calculation[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+const totalTokens = computed(() => {
+  if (!props.calculations || props.calculations.length === 0) return 0
+  return props.calculations.reduce((sum, calc) => sum + calc.token_count, 0)
+})
+
+const averageTokensPerTransaction = computed(() => {
+  if (!props.calculations || props.calculations.length === 0) return 0
+  return Math.round(totalTokens.value / props.calculations.length)
+})
+
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(2) + 'M'
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toLocaleString()
+}
 </script>
 

@@ -91,7 +91,7 @@
     </div>
 
     <!-- Analytics Summary Cards -->
-    <ProjectSummary :analytics="analytics" />
+    <ProjectSummary :analytics="analytics" :calculations="chartCalculations" />
 
     <!-- Filters Section -->
     <ProjectFilters
