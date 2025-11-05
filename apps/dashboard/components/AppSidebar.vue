@@ -7,7 +7,7 @@
     )"
   >
     <!-- Header with toggle button -->
-    <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center justify-between px-4 pt-4 pb-4 border-b border-gray-200 dark:border-gray-700">
       <div v-if="!isCollapsed" class="flex items-center space-x-2">
         <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
           <span class="text-white font-bold text-sm">SA</span>

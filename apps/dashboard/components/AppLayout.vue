@@ -7,8 +7,8 @@
     <main 
       :class="cn(
         'transition-all duration-300 ease-in-out',
-        'lg:ml-64',
-        isCollapsed && 'lg:ml-16'
+        'ml-16 lg:ml-64',
+        isCollapsed && 'ml-16 lg:ml-16'
       )"
       class="min-h-screen"
     >
