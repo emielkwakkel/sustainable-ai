@@ -54,21 +54,25 @@ BEGIN
     ) round_output ON r.id = round_output.round_id
     WHERE r.chat_id = chat_uuid;
     
-    -- Calculate actual input tokens (sum of actual_input_tokens from all rounds) for cost calculation
-    -- This is the cumulative input context (prompt + all previous responses) per round
+    -- Calculate cumulative input tokens (sum of actual_input_tokens from all rounds)
+    -- This represents the total input tokens sent across all rounds
     SELECT COALESCE(SUM(r.actual_input_tokens), 0)
     INTO actual_input_tokens
     FROM rounds r
     WHERE r.chat_id = chat_uuid;
     
     -- Store cumulative total as total_input_tokens for display (matches UI cumulative)
+    -- This is the cumulative total: (input + output) × agents per round, summed
     input_tokens := total_tokens;
+    
+    -- For cost calculation, use the actual input tokens (sum of actual_input_tokens)
+    -- This matches the "Input Tokens" value that should be displayed (1005 in the example)
+    -- The cost should be calculated on the cumulative input tokens, not the cumulative total
     
     -- Calculate costs using new pricing (per 1M tokens):
     -- GPT-4o: Input $2.50, Output $10.00
     -- GPT-4.1: Input $2.00, Output $8.00
     -- GPT-5: Input $1.25, Output $10.00
-    -- Note: Use actual_input_tokens for input cost calculation, not the cumulative total
     
     INSERT INTO chat_summaries (
         chat_id,
@@ -87,7 +91,7 @@ BEGIN
         updated_at
     ) VALUES (
         chat_uuid,
-        input_tokens,  -- Cumulative total for display (matches UI cumulative)
+        actual_input_tokens,  -- Use actual input tokens for display (matches expected 1005)
         output_tokens,
         total_tokens,
         -- GPT-4o: $2.50 per 1M input tokens, $10.00 per 1M output tokens
