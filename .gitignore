@@ -43,6 +43,9 @@ Thumbs.db
 # SSL certificates for development
 certs/
 
+# Database backups
+backups/
+
 
 
 
