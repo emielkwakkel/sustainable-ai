@@ -128,12 +128,42 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalCount > pageSize" class="mt-6 flex items-center justify-between">
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          Showing {{ Math.min(currentPage * pageSize - pageSize + 1, totalCount) }} to
-          {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} results
+      <div v-if="totalCount > 0" class="mt-6 flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-4">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            <span v-if="pageSize > 0">
+              Showing {{ Math.min((currentPage - 1) * pageSize + 1, totalCount) }} to
+              {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} results
+            </span>
+            <span v-else>
+              Showing all {{ totalCount }} results
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-700 dark:text-gray-300">Show:</label>
+            <select
+              :value="pageSize"
+              @change="handlePageSizeChange($event)"
+              class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
+              <option value="10">10</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="0">All</option>
+            </select>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div v-if="totalPages > 1" class="flex items-center gap-2">
+          <button
+            @click="goToPage(1)"
+            :disabled="currentPage === 1"
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="First page"
+          >
+            First
+          </button>
           <button
             @click="goToPage(currentPage - 1)"
             :disabled="currentPage === 1"
@@ -163,6 +193,14 @@
           >
             Next
           </button>
+          <button
+            @click="goToPage(totalPages)"
+            :disabled="currentPage >= totalPages"
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Last page"
+          >
+            Last
+          </button>
         </div>
       </div>
     </div>
@@ -181,6 +219,7 @@
       v-if="editingCalculation"
       :calculation="editingCalculation"
       :project-id="projectId"
+      :project-preset-id="projectPresetId"
       @close="editingCalculation = null"
       @updated="handleCalculationUpdated"
     />
@@ -201,12 +240,14 @@ interface Props {
   currentPage: number
   pageSize: number
   projectId: string
+  projectPresetId?: string
 }
 
 interface Emits {
   (e: 'recalculated'): void
   (e: 'deleted'): void
   (e: 'page-change', page: number): void
+  (e: 'page-size-change', size: number): void
 }
 
 const props = defineProps<Props>()
@@ -226,7 +267,10 @@ const someSelected = computed(() => {
   return selectedCalculations.value.length > 0 && selectedCalculations.value.length < props.calculations.length
 })
 
-const totalPages = computed(() => Math.ceil(props.totalCount / props.pageSize))
+const totalPages = computed(() => {
+  if (props.pageSize === 0) return 1 // "All" option
+  return Math.ceil(props.totalCount / props.pageSize)
+})
 
 const visiblePages = computed(() => {
   const pages: number[] = []
@@ -388,5 +432,11 @@ const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     emit('page-change', page)
   }
+}
+
+const handlePageSizeChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement
+  const newSize = parseInt(target.value, 10)
+  emit('page-size-change', newSize)
 }
 </script>

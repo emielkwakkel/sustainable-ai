@@ -55,15 +55,44 @@ function renderEmissionsChart() {
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`)
 
-  // Prepare data - group by date
-  const data = props.calculations
+  // Prepare data - group by 6-hour intervals
+  const rawData = props.calculations
     .map((calc) => ({
       date: new Date(calc.created_at),
       value: calc.results.totalEmissionsGrams,
     }))
     .sort((a, b) => a.date.getTime() - b.date.getTime())
 
-  if (data.length === 0) return
+  if (rawData.length === 0) return
+
+  // Group data by 6-hour intervals
+  const groupedData = new Map<string, { date: Date; value: number; count: number }>()
+  
+  rawData.forEach((item) => {
+    // Round down to nearest 6-hour interval
+    const date = new Date(item.date)
+    const hours = date.getHours()
+    const roundedHours = Math.floor(hours / 6) * 6
+    const roundedDate = new Date(date)
+    roundedDate.setHours(roundedHours, 0, 0, 0)
+    
+    const key = roundedDate.toISOString()
+    const existing = groupedData.get(key)
+    
+    if (existing) {
+      existing.value += item.value
+      existing.count += 1
+    } else {
+      groupedData.set(key, {
+        date: roundedDate,
+        value: item.value,
+        count: 1
+      })
+    }
+  })
+  
+  const data = Array.from(groupedData.values())
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
 
   const xScale = d3
     .scaleTime()
@@ -102,8 +131,8 @@ function renderEmissionsChart() {
     .attr('fill', '#ef4444')
 
   // Add axes
-  // Format: "Nov 4 22:09" to show date and time
-  const dateFormat = d3.timeFormat('%b %d %H:%M')
+  // Format: "Nov 4 00:00" for 6-hour intervals
+  const dateFormat = d3.timeFormat('%b %d %H:00')
   const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(dateFormat as any)
   const yAxis = d3.axisLeft(yScale).ticks(5)
 
@@ -149,15 +178,44 @@ function renderEnergyChart() {
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`)
 
-  // Prepare data
-  const data = props.calculations
+  // Prepare data - group by 6-hour intervals
+  const rawData = props.calculations
     .map((calc) => ({
       date: new Date(calc.created_at),
       value: calc.results.energyJoules / 3600000, // Convert to kWh
     }))
     .sort((a, b) => a.date.getTime() - b.date.getTime())
 
-  if (data.length === 0) return
+  if (rawData.length === 0) return
+
+  // Group data by 6-hour intervals
+  const groupedData = new Map<string, { date: Date; value: number; count: number }>()
+  
+  rawData.forEach((item) => {
+    // Round down to nearest 6-hour interval
+    const date = new Date(item.date)
+    const hours = date.getHours()
+    const roundedHours = Math.floor(hours / 6) * 6
+    const roundedDate = new Date(date)
+    roundedDate.setHours(roundedHours, 0, 0, 0)
+    
+    const key = roundedDate.toISOString()
+    const existing = groupedData.get(key)
+    
+    if (existing) {
+      existing.value += item.value
+      existing.count += 1
+    } else {
+      groupedData.set(key, {
+        date: roundedDate,
+        value: item.value,
+        count: 1
+      })
+    }
+  })
+  
+  const data = Array.from(groupedData.values())
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
 
   const xScale = d3
     .scaleTime()
@@ -196,8 +254,8 @@ function renderEnergyChart() {
     .attr('fill', '#3b82f6')
 
   // Add axes
-  // Format: "Nov 4 22:09" to show date and time
-  const dateFormat = d3.timeFormat('%b %d %H:%M')
+  // Format: "Nov 4 00:00" for 6-hour intervals
+  const dateFormat = d3.timeFormat('%b %d %H:00')
   const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(dateFormat as any)
   const yAxis = d3.axisLeft(yScale).ticks(5)
 
