@@ -12,6 +12,12 @@ export interface ModelPricing {
 
 export const modelPricing: ModelPricing[] = [
   {
+    model: 'gpt-3.5-turbo',
+    input: 0.50,
+    cachedInput: 0.00,
+    output: 1.50
+  },
+  {
     model: 'gpt-4o',
     input: 2.50,
     cachedInput: 1.25,

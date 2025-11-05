@@ -230,6 +230,7 @@ const newCustomInputCost = ref<number | null>(null)
 const newCustomOutputCost = ref<number | null>(null)
 
 // Pricing from config
+const gpt35Pricing = modelPricing.find(p => p.model === 'gpt-3.5-turbo') || { input: 0.50, output: 1.50 }
 const gpt4oPricing = modelPricing.find(p => p.model === 'gpt-4o') || { input: 2.50, output: 10 }
 const gpt41Pricing = modelPricing.find(p => p.model === 'gpt-4.1') || { input: 2, output: 8 }
 const gpt5Pricing = modelPricing.find(p => p.model === 'gpt-5') || { input: 1.25, output: 10 }
@@ -245,6 +246,14 @@ interface ModelConfig {
 }
 
 const defaultModels = computed<ModelConfig[]>(() => [
+  {
+    id: 'gpt-3.5-turbo',
+    name: 'GPT-3.5 Turbo',
+    pricing: gpt35Pricing,
+    inputCost: props.summary?.gpt35_input_cost,
+    outputCost: props.summary?.gpt35_output_cost,
+    totalCost: props.summary?.gpt35_total_cost
+  },
   {
     id: 'gpt-4o',
     name: 'GPT-4o',

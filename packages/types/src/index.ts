@@ -294,6 +294,9 @@ export interface ChatSummary {
   total_input_tokens: number
   total_output_tokens: number
   total_tokens: number
+  gpt35_input_cost?: number
+  gpt35_output_cost?: number
+  gpt35_total_cost?: number
   gpt4o_input_cost: number
   gpt4o_output_cost: number
   gpt4o_total_cost: number
@@ -315,7 +318,7 @@ export interface CostCalculationResult {
   inputCost: number
   outputCost: number
   totalCost: number
-  model: 'gpt-4o' | 'gpt-4.1' | 'gpt-5'
+  model: 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4.1' | 'gpt-5'
 }
 
 export interface CreateChatRequest {
