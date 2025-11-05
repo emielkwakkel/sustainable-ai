@@ -114,9 +114,11 @@
       :current-page="currentPage"
       :page-size="pageSize"
       :project-id="projectId"
+      :project-preset-id="project?.calculation_preset_id"
       @recalculated="handleRecalculated"
       @deleted="handleDeleted"
       @page-change="handlePageChange"
+      @page-size-change="handlePageSizeChange"
     />
 
     <!-- Modals -->
@@ -267,11 +269,19 @@ const handlePageChange = async (page: number) => {
   await loadCalculations()
 }
 
+const handlePageSizeChange = async (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1 // Reset to first page when changing page size
+  await loadCalculations()
+}
+
 const loadCalculations = async () => {
-  const offset = (currentPage.value - 1) * pageSize.value
+  // Handle "All" option (pageSize = 0)
+  const limit = pageSize.value === 0 ? 10000 : pageSize.value
+  const offset = (currentPage.value - 1) * limit
   
   // Load paginated calculations for the list
-  await fetchCalculations(pageSize.value, offset, {
+  await fetchCalculations(limit, offset, {
     start_date: filters.value.startDate,
     end_date: filters.value.endDate,
     tag_ids: filters.value.tagIds.length > 0 ? filters.value.tagIds : undefined
