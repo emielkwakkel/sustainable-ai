@@ -33,7 +33,7 @@
         <div class="relative">
           <textarea
             :value="round.prompt"
-            @input="$emit('update-prompt', round.id, ($event.target as HTMLTextAreaElement).value)"
+            @blur="$emit('update-prompt', round.id, ($event.target as HTMLTextAreaElement).value)"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
             rows="2"
           />
@@ -63,7 +63,7 @@
           </div>
           <textarea
             :value="response.response_text"
-            @input="$emit('update-response', round.id, response.agent_id, ($event.target as HTMLTextAreaElement).value)"
+            @blur="$emit('update-response', round.id, response.agent_id, ($event.target as HTMLTextAreaElement).value)"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
             rows="2"
           />
