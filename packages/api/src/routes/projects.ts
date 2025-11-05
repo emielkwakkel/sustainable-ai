@@ -72,23 +72,68 @@ router.get('/:id', async (req, res) => {
     const { user_id } = req.query
 
     if (!user_id) {
-      return res.status(400).json({ error: 'user_id is required' })
+      return res.status(400).json({ 
+        success: false,
+        error: 'user_id is required' 
+      })
+    }
+
+    // Convert id to integer for database queries
+    const projectIdInt = parseInt(id, 10)
+    if (isNaN(projectIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid project ID' 
+      })
     }
 
     // Get project details
     const projectResult = await pool.query(`
       SELECT * FROM projects 
       WHERE id = $1 AND user_id = $2
-    `, [id, user_id])
+    `, [projectIdInt, user_id])
 
     if (projectResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' })
+      return res.status(404).json({ 
+        success: false,
+        error: 'Project not found' 
+      })
     }
 
-    // Get project analytics using PostgreSQL function
-    const analyticsResult = await pool.query(`
-      SELECT * FROM get_project_analytics($1)
-    `, [id])
+    // Get project analytics - try function first, fallback to direct query
+    let analytics: any = null
+    try {
+      const analyticsResult = await pool.query(`
+        SELECT get_project_analytics($1::INTEGER, NULL::TIMESTAMP WITH TIME ZONE, NULL::TIMESTAMP WITH TIME ZONE) as analytics
+      `, [projectIdInt])
+      analytics = analyticsResult.rows[0]?.analytics
+    } catch (funcError) {
+      // If function fails due to ambiguity, compute analytics directly
+      console.warn('Function call failed, computing analytics directly:', funcError)
+      const directResult = await pool.query(`
+        SELECT 
+          COALESCE(SUM((results->>'totalEmissionsGrams')::DECIMAL), 0) as totalEmissionsGrams,
+          COALESCE(SUM((results->>'energyJoules')::DECIMAL), 0) as totalEnergyJoules,
+          COALESCE(AVG((results->>'carbonEmissionsGrams')::DECIMAL), 0) as averageEmissionsPerToken,
+          COUNT(*) as calculationCount,
+          MIN(created_at) as start_date,
+          MAX(created_at) as end_date
+        FROM calculations
+        WHERE project_id = $1
+      `, [projectIdInt])
+      
+      const row = directResult.rows[0]
+      analytics = {
+        totalEmissionsGrams: parseFloat(row.totalemissionsgrams || '0'),
+        totalEnergyJoules: parseFloat(row.totalenergyjoules || '0'),
+        averageEmissionsPerToken: parseFloat(row.averageemissionspertoken || '0'),
+        calculationCount: parseInt(row.calculationcount || '0', 10),
+        dateRange: {
+          start: row.start_date || null,
+          end: row.end_date || null
+        }
+      }
+    }
 
     // Get recent calculations
     const calculationsResult = await pool.query(`
@@ -102,13 +147,19 @@ router.get('/:id', async (req, res) => {
       WHERE project_id = $1 
       ORDER BY created_at DESC 
       LIMIT 50
-    `, [id])
+    `, [projectIdInt])
 
     res.json({
       success: true,
       data: {
         project: projectResult.rows[0],
-        analytics: analyticsResult.rows[0].get_project_analytics,
+        analytics: analytics || {
+          totalEmissionsGrams: 0,
+          totalEnergyJoules: 0,
+          averageEmissionsPerToken: 0,
+          calculationCount: 0,
+          dateRange: { start: null, end: null }
+        },
         recentCalculations: calculationsResult.rows
       }
     })
@@ -229,18 +280,30 @@ router.get('/:id/timeline', async (req, res) => {
       return res.status(400).json({ error: 'user_id is required' })
     }
 
+    // Convert id to integer
+    const projectIdInt = parseInt(id, 10)
+    if (isNaN(projectIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid project ID' 
+      })
+    }
+
     // Verify project belongs to user
     const projectCheck = await pool.query(`
       SELECT id FROM projects WHERE id = $1 AND user_id = $2
-    `, [id, user_id])
+    `, [projectIdInt, user_id])
 
     if (projectCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' })
+      return res.status(404).json({ 
+        success: false,
+        error: 'Project not found' 
+      })
     }
 
     const result = await pool.query(`
-      SELECT * FROM get_project_emissions_timeline($1, $2, $3, $4)
-    `, [id, start_date, end_date, interval])
+      SELECT * FROM get_project_emissions_timeline($1::INTEGER, $2, $3, $4)
+    `, [projectIdInt, start_date, end_date, interval])
 
     res.json({ success: true, data: result.rows })
   } catch (error) {
@@ -259,18 +322,30 @@ router.post('/:id/recalculate', async (req, res) => {
       return res.status(400).json({ error: 'user_id is required' })
     }
 
+    // Convert id to integer
+    const projectIdInt = parseInt(id, 10)
+    if (isNaN(projectIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid project ID' 
+      })
+    }
+
     // Verify project belongs to user
     const projectCheck = await pool.query(`
       SELECT id FROM projects WHERE id = $1 AND user_id = $2
-    `, [id, user_id])
+    `, [projectIdInt, user_id])
 
     if (projectCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' })
+      return res.status(404).json({ 
+        success: false,
+        error: 'Project not found' 
+      })
     }
 
     const result = await pool.query(`
-      SELECT recalculate_project_emissions($1, $2) as updated_count
-    `, [id, algorithm_version || '1.0.0'])
+      SELECT recalculate_project_emissions($1::INTEGER, $2) as updated_count
+    `, [projectIdInt, algorithm_version || '1.0.0'])
 
     res.json({ 
       success: true, 

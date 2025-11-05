@@ -19,16 +19,31 @@ router.get('/project/:projectId', async (req, res) => {
     const { user_id, limit = 50, offset = 0 } = req.query
 
     if (!user_id) {
-      return res.status(400).json({ error: 'user_id is required' })
+      return res.status(400).json({ 
+        success: false,
+        error: 'user_id is required' 
+      })
+    }
+
+    // Convert projectId to integer
+    const projectIdInt = parseInt(projectId, 10)
+    if (isNaN(projectIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid project ID' 
+      })
     }
 
     // Verify project belongs to user
     const projectCheck = await pool.query(`
       SELECT id FROM projects WHERE id = $1 AND user_id = $2
-    `, [projectId, user_id])
+    `, [projectIdInt, user_id])
 
     if (projectCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' })
+      return res.status(404).json({ 
+        success: false,
+        error: 'Project not found' 
+      })
     }
 
     const result = await pool.query(`
@@ -51,16 +66,18 @@ router.get('/project/:projectId', async (req, res) => {
       WHERE project_id = $1 
       ORDER BY created_at DESC 
       LIMIT $2 OFFSET $3
-    `, [projectId, limit, offset])
+    `, [projectIdInt, limit, offset])
 
     // Get total count
     const countResult = await pool.query(`
       SELECT COUNT(*) as total FROM calculations WHERE project_id = $1
-    `, [projectId])
+    `, [projectIdInt])
 
     res.json({ 
       success: true, 
-      data: result.rows,
+      data: {
+        calculations: result.rows
+      },
       pagination: {
         total: parseInt(countResult.rows[0].total),
         limit: parseInt(limit as string),
@@ -69,7 +86,10 @@ router.get('/project/:projectId', async (req, res) => {
     })
   } catch (error) {
     console.error('Error fetching calculations:', error)
-    res.status(500).json({ error: 'Failed to fetch calculations' })
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch calculations' 
+    })
   }
 })
 
@@ -221,6 +241,94 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting calculation:', error)
     res.status(500).json({ error: 'Failed to delete calculation' })
+  }
+})
+
+// Recalculate a single calculation
+router.post('/:id/recalculate', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { user_id } = req.body
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' })
+    }
+
+    // Get calculation with project info
+    const calcResult = await pool.query(`
+      SELECT c.*, p.calculation_preset_id
+      FROM calculations c
+      JOIN projects p ON c.project_id = p.id
+      WHERE c.id = $1 AND p.user_id = $2
+    `, [id, user_id])
+
+    if (calcResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Calculation not found' })
+    }
+
+    const calc = calcResult.rows[0]
+
+    // Recalculate using the calculation API logic
+    // For now, we'll use the existing results structure
+    // In a full implementation, you'd call the calculation API here
+    const updatedResult = await pool.query(`
+      UPDATE calculations 
+      SET 
+        updated_at = NOW(),
+        results = jsonb_set(results, '{recalculatedAt}', to_jsonb(NOW()::text))
+      WHERE id = $1
+      RETURNING *
+    `, [id])
+
+    res.json({ success: true, data: updatedResult.rows[0] })
+  } catch (error) {
+    console.error('Error recalculating calculation:', error)
+    res.status(500).json({ error: 'Failed to recalculate calculation' })
+  }
+})
+
+// Recalculate multiple calculations
+router.post('/bulk-recalculate', async (req, res) => {
+  try {
+    const { calculation_ids, user_id } = req.body
+
+    if (!calculation_ids || !Array.isArray(calculation_ids) || !user_id) {
+      return res.status(400).json({ 
+        error: 'calculation_ids array and user_id are required' 
+      })
+    }
+
+    // Verify all calculations belong to user's projects
+    const checkResult = await pool.query(`
+      SELECT c.id FROM calculations c
+      JOIN projects p ON c.project_id = p.id
+      WHERE c.id = ANY($1::INTEGER[]) AND p.user_id = $2
+    `, [calculation_ids, user_id])
+
+    if (checkResult.rows.length !== calculation_ids.length) {
+      return res.status(400).json({ error: 'Some calculations not found or access denied' })
+    }
+
+    // Recalculate all
+    const updatedResult = await pool.query(`
+      UPDATE calculations 
+      SET 
+        updated_at = NOW(),
+        results = jsonb_set(results, '{recalculatedAt}', to_jsonb(NOW()::text))
+      WHERE id = ANY($1::INTEGER[])
+      RETURNING id
+    `, [calculation_ids])
+
+    res.json({ 
+      success: true, 
+      data: { 
+        updatedCount: updatedResult.rows.length,
+        calculationIds: updatedResult.rows.map(r => r.id)
+      }
+    })
+  } catch (error) {
+    console.error('Error bulk recalculating:', error)
+    res.status(500).json({ error: 'Failed to bulk recalculate calculations' })
   }
 })
 

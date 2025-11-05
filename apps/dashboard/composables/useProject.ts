@@ -70,6 +70,10 @@ export const useProject = (projectId: string) => {
       } else {
         console.error('API response error:', response)
         error.value = response?.error || 'Failed to fetch project'
+        // If project not found, show helpful message
+        if (response?.error === 'Project not found') {
+          error.value = `Project with ID ${projectId} not found. Please check that the project exists and you have access to it.`
+        }
       }
     } catch (err) {
       console.error('Error fetching project:', err)

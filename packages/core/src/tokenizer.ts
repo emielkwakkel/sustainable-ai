@@ -42,14 +42,14 @@ export function countTokens(text: string, model: TokenizerModel = 'gpt-4'): numb
  * Calculate cost for token usage based on model pricing
  * @param inputTokens - Number of input tokens
  * @param outputTokens - Number of output tokens
- * @param model - Model to calculate costs for ('gpt-4o', 'gpt-4.1', or 'gpt-5')
+ * @param model - Model to calculate costs for ('gpt-3.5-turbo', 'gpt-4o', 'gpt-4.1', or 'gpt-5')
  * @param useCachedInput - Whether to use cached input pricing (default: false)
  * @returns Cost calculation result
  */
 export function calculateCost(
   inputTokens: number,
   outputTokens: number,
-  model: 'gpt-4o' | 'gpt-4.1' | 'gpt-5' = 'gpt-4o',
+  model: 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4.1' | 'gpt-5' = 'gpt-4o',
   useCachedInput: boolean = false
 ): CostCalculationResult {
   const inputCost = calculateInputCost(inputTokens, model, useCachedInput)
