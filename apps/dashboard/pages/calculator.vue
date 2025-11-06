@@ -223,15 +223,15 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <p class="text-2xl font-bold text-blue-900 dark:text-blue-200">
-                    {{ formatNumber(calculationResult.energyJoules) }}
+                    {{ formatEnergyJoules(calculationResult.energyJoules) }}
                   </p>
-                  <p class="text-sm text-blue-700 dark:text-blue-300">Joules</p>
+                  <p class="text-sm text-blue-700 dark:text-blue-300">Energy</p>
                 </div>
                 <div>
                   <p class="text-2xl font-bold text-blue-900 dark:text-blue-200">
-                    {{ formatNumber(calculationResult.energyKWh, 6) }}
+                    {{ formatEnergyWh(calculationResult.energyJoules) }}
                   </p>
-                  <p class="text-sm text-blue-700 dark:text-blue-300">kWh</p>
+                  <p class="text-sm text-blue-700 dark:text-blue-300">Energy</p>
                 </div>
               </div>
             </div>
@@ -242,15 +242,15 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <p class="text-2xl font-bold text-red-900 dark:text-red-200">
-                    {{ formatNumber(calculationResult.carbonEmissionsGrams, 4) }}
+                    {{ formatCO2(calculationResult.carbonEmissionsGrams, 4) }}
                   </p>
-                  <p class="text-sm text-red-700 dark:text-red-300">g CO₂ per token</p>
+                  <p class="text-sm text-red-700 dark:text-red-300">per token</p>
                 </div>
                 <div>
                   <p class="text-2xl font-bold text-red-900 dark:text-red-200">
-                    {{ formatNumber(calculationResult.totalEmissionsGrams, 2) }}
+                    {{ formatCO2(calculationResult.totalEmissionsGrams, 2) }}
                   </p>
-                  <p class="text-sm text-red-700 dark:text-red-300">g CO₂ total</p>
+                  <p class="text-sm text-red-700 dark:text-red-300">total</p>
                 </div>
               </div>
             </div>
@@ -262,7 +262,7 @@
                 <div class="flex justify-between">
                   <span class="text-green-700 dark:text-green-300">Lightbulb (10W):</span>
                   <span class="font-medium text-green-900 dark:text-green-200">
-                    {{ formatNumber(calculationResult.equivalentLightbulbMinutes, 1) }} minutes
+                    {{ formatDuration(calculationResult.equivalentLightbulbMinutes) }}
                   </span>
                 </div>
                 <div class="flex justify-between">
@@ -274,7 +274,7 @@
                 <div class="flex justify-between">
                   <span class="text-green-700 dark:text-green-300">Tree absorption:</span>
                   <span class="font-medium text-green-900 dark:text-green-200">
-                    {{ formatNumber(calculationResult.equivalentTreeHours, 1) }} hours
+                    {{ formatDuration(calculationResult.equivalentTreeHours * 60) }}
                   </span>
                 </div>
               </div>
@@ -312,6 +312,7 @@ import { nextTick } from 'vue'
 import { Calculator } from 'lucide-vue-next'
 import type { TokenCalculatorFormData, CalculationResult, AIModel } from '~/types/watttime'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
+import { formatEnergyJoules, formatEnergyWh, formatCO2, formatDuration } from '~/utils/formatting'
 
 // Set page title
 useHead({
@@ -346,6 +347,7 @@ const formData = ref<TokenCalculatorFormData>({
 
 const calculationResult = ref<CalculationResult | null>(null)
 const isCalculating = ref(false)
+const isLoadingPreset = ref(false)
 const useCustomPue = ref(false)
 const useCustomCarbonIntensity = ref(false)
 
@@ -376,6 +378,7 @@ const calculate = async () => {
 
     // Calculate emissions
     const result = calculateEmissions(formData.value)
+    console.log(result);
     calculationResult.value = result
   } catch (error) {
     console.error('Calculation error:', error)
@@ -406,12 +409,42 @@ const exportResults = () => {
 }
 
 // Preset handler
-const handlePresetLoaded = (configuration: TokenCalculatorFormData) => {
-  formData.value = { ...configuration }
+const handlePresetLoaded = async (configuration: TokenCalculatorFormData) => {
+  // Prevent calculation during preset loading
+  isLoadingPreset.value = true
+  isCalculating.value = true
   
-  // Check if preset contains custom values and update checkbox states
-  useCustomPue.value = configuration.customPue !== undefined
-  useCustomCarbonIntensity.value = configuration.customCarbonIntensity !== undefined
+  try {
+    // Store the region value before setting provider (which will reset it)
+    const presetRegion = configuration.dataCenterRegion
+    
+    // Set provider first to update available regions list
+    formData.value.dataCenterProvider = configuration.dataCenterProvider
+    
+    // Wait for next tick to ensure regions list is updated
+    await nextTick()
+    
+    // Set all other values (region will be set separately)
+    formData.value = { 
+      ...configuration,
+      dataCenterRegion: '' // Temporarily set to empty to avoid watcher issues
+    }
+    
+    // Wait another tick to ensure everything is updated, then set the region
+    await nextTick()
+    formData.value.dataCenterRegion = presetRegion
+    
+    // Wait one more tick to ensure region is properly set before allowing calculations
+    await nextTick()
+    
+    // Check if preset contains custom values and update checkbox states
+    useCustomPue.value = configuration.customPue !== undefined
+    useCustomCarbonIntensity.value = configuration.customCarbonIntensity !== undefined
+  } finally {
+    // Re-enable calculation after preset is fully loaded
+    isLoadingPreset.value = false
+    isCalculating.value = false
+  }
 }
 
 // Auto-update context fields when model changes
@@ -445,6 +478,9 @@ watch(() => formData.value.dataCenterRegion, (newRegion) => {
 
 // Reset region when provider changes
 watch(() => formData.value.dataCenterProvider, () => {
+  // Don't reset region if we're loading a preset (preset handler will manage it)
+  if (isLoadingPreset.value) return
+  
   formData.value.dataCenterRegion = ''
   // Prevent calculation during provider change
   isCalculating.value = true
@@ -455,7 +491,7 @@ watch(() => formData.value.dataCenterProvider, () => {
 
 // Auto-calculate when form data changes
 watch(formData, () => {
-  if (formData.value.tokenCount > 0 && !isCalculating.value) {
+  if (formData.value.tokenCount > 0 && !isCalculating.value && !isLoadingPreset.value) {
     calculate()
   }
 }, { deep: true })

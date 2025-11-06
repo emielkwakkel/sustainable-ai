@@ -170,7 +170,7 @@ import { ref, onMounted, computed } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import type { Project, Calculation } from '~/types/watttime'
 import { useProject } from '../../composables/useProject'
-import { useProjectPresets } from '../../composables/useProjectPresets'
+import { usePresets } from '~/composables/usePresets'
 import { formatCO2, formatEnergy } from '~/utils/formatting'
 import AddCalculationModal from '../../components/AddCalculationModal.vue'
 import ImportFromCursorModal from '../../components/ImportFromCursorModal.vue'
@@ -188,7 +188,16 @@ const projectId = route.params.id as string
 
 // Composables
 const { project, analytics, calculations, totalCount, fetchProject, fetchCalculations } = useProject(projectId)
-const { getPresetById, getAllPresets } = useProjectPresets()
+const { presets } = usePresets()
+
+// Helper functions
+const getPresetById = (id: string) => {
+  return presets.value.find(p => p.id === id)
+}
+
+const getAllPresets = () => {
+  return presets.value
+}
 
 // State
 const showAddCalculationModal = ref(false)
@@ -210,7 +219,7 @@ const chartCalculations = ref<Calculation[]>([])
 // Computed
 const currentPreset = computed(() => {
   if (!project.value?.calculation_preset_id) return null
-  return getPresetById(project.value.calculation_preset_id)
+  return getPresetById(project.value.calculation_preset_id) || null
 })
 
 // Methods

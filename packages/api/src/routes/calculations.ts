@@ -1,7 +1,56 @@
 import { Router } from 'express'
 import { Pool } from 'pg'
+import { sustainableAICalculator } from '@susai/core'
+import type { TokenCalculatorFormData } from '@susai/types'
 
 const router = Router()
+
+// Project preset configurations (matching frontend presets)
+interface ProjectPreset {
+  id: string
+  name: string
+  description: string
+  configuration: TokenCalculatorFormData
+}
+
+const projectPresets: ProjectPreset[] = [
+  {
+    id: 'gpt-4-research',
+    name: 'GPT-4 Token Research',
+    description: 'Based on Anu\'s Substack article "We can use tokens to track AI\'s carbon"',
+    configuration: {
+      tokenCount: 200,
+      model: 'gpt-4',
+      contextLength: 8000,
+      contextWindow: 1250,
+      hardware: 'nvidia-a100',
+      dataCenterProvider: 'aws',
+      dataCenterRegion: 'aws-asia-pacific-tokyo',
+      customPue: 1.1,
+      customCarbonIntensity: undefined,
+    },
+  },
+  {
+    id: 'cursor-ai',
+    name: 'Cursor.ai',
+    description: 'Based on Cursor\'s actual infrastructure as reported in The Pragmatic Engineer',
+    configuration: {
+      tokenCount: 1000,
+      model: 'gpt-4',
+      contextLength: 8000,
+      contextWindow: 1250,
+      hardware: 'nvidia-h100',
+      dataCenterProvider: 'azure',
+      dataCenterRegion: 'azure-virginia',
+      customPue: undefined,
+      customCarbonIntensity: undefined,
+    },
+  },
+]
+
+function getPresetById(id: string): ProjectPreset | undefined {
+  return projectPresets.find(preset => preset.id === id)
+}
 
 // Database connection
 const pool = new Pool({
@@ -231,14 +280,32 @@ router.post('/', async (req, res) => {
       })
     }
 
-    // Verify project belongs to user
+    // Verify project belongs to user and get preset
     const projectCheck = await pool.query(`
-      SELECT id FROM projects WHERE id = $1 AND user_id = $2
+      SELECT id, calculation_preset_id FROM projects WHERE id = $1 AND user_id = $2
     `, [project_id, user_id])
 
     if (projectCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Project not found' })
     }
+
+    const projectPresetId = projectCheck.rows[0].calculation_preset_id
+    const preset = getPresetById(projectPresetId)
+    
+    if (!preset) {
+      return res.status(400).json({ 
+        error: `Preset not found: ${projectPresetId}` 
+      })
+    }
+
+    // Use preset values for context_length and context_window if not provided
+    const finalContextLength = context_length ?? preset.configuration.contextLength
+    const finalContextWindow = context_window ?? preset.configuration.contextWindow
+    const finalHardware = hardware ?? preset.configuration.hardware
+    const finalDataCenterProvider = data_center_provider ?? preset.configuration.dataCenterProvider
+    const finalDataCenterRegion = data_center_region ?? preset.configuration.dataCenterRegion
+    const finalCustomPue = custom_pue ?? preset.configuration.customPue
+    const finalCustomCarbonIntensity = custom_carbon_intensity ?? preset.configuration.customCarbonIntensity
 
     const result = await pool.query(`
       INSERT INTO calculations (
@@ -249,9 +316,9 @@ router.post('/', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `, [
-      project_id, token_count, model, context_length, context_window,
-      hardware, data_center_provider, data_center_region, custom_pue,
-      custom_carbon_intensity, calculation_parameters, results
+      project_id, token_count, model, finalContextLength, finalContextWindow,
+      finalHardware, finalDataCenterProvider, finalDataCenterRegion, finalCustomPue,
+      finalCustomCarbonIntensity, calculation_parameters, results
     ])
 
     res.status(201).json({ success: true, data: result.rows[0] })
@@ -295,9 +362,10 @@ router.put('/:id', async (req, res) => {
       })
     }
 
-    // Verify calculation belongs to user's project
+    // Verify calculation belongs to user's project and get project preset
     const calculationCheck = await pool.query(`
-      SELECT c.id FROM calculations c
+      SELECT c.id, c.project_id, p.calculation_preset_id 
+      FROM calculations c
       JOIN projects p ON c.project_id = p.id
       WHERE c.id = $1 AND p.user_id = $2
     `, [calculationIdInt, user_id])
@@ -309,27 +377,61 @@ router.put('/:id', async (req, res) => {
       })
     }
 
+    const projectPresetId = calculationCheck.rows[0].calculation_preset_id
+    const preset = getPresetById(projectPresetId)
+    
+    if (!preset) {
+      return res.status(400).json({ 
+        success: false,
+        error: `Preset not found: ${projectPresetId}` 
+      })
+    }
+
+    // Get current calculation values
+    const currentCalc = await pool.query(`
+      SELECT context_length, context_window, hardware, data_center_provider, 
+             data_center_region, custom_pue, custom_carbon_intensity
+      FROM calculations WHERE id = $1
+    `, [calculationIdInt])
+
+    const current = currentCalc.rows[0]
+
+    // Use provided values if present, otherwise use preset values (not current values)
+    // If null is explicitly passed, it means "use preset" - set to NULL in DB
+    // If undefined is passed, keep current value
+    const finalContextLength = context_length !== undefined 
+      ? (context_length === null ? null : context_length)
+      : preset.configuration.contextLength
+    const finalContextWindow = context_window !== undefined 
+      ? (context_window === null ? null : context_window)
+      : preset.configuration.contextWindow
+    const finalHardware = hardware !== undefined ? hardware : preset.configuration.hardware
+    const finalDataCenterProvider = data_center_provider !== undefined ? data_center_provider : preset.configuration.dataCenterProvider
+    const finalDataCenterRegion = data_center_region !== undefined ? data_center_region : preset.configuration.dataCenterRegion
+    const finalCustomPue = custom_pue !== undefined ? custom_pue : preset.configuration.customPue
+    const finalCustomCarbonIntensity = custom_carbon_intensity !== undefined ? custom_carbon_intensity : preset.configuration.customCarbonIntensity
+
     const result = await pool.query(`
       UPDATE calculations 
       SET 
         token_count = COALESCE($1, token_count),
         model = COALESCE($2, model),
-        context_length = COALESCE($3, context_length),
-        context_window = COALESCE($4, context_window),
+        context_length = $3,
+        context_window = $4,
         hardware = COALESCE($5, hardware),
         data_center_provider = COALESCE($6, data_center_provider),
         data_center_region = COALESCE($7, data_center_region),
-        custom_pue = COALESCE($8, custom_pue),
-        custom_carbon_intensity = COALESCE($9, custom_carbon_intensity),
+        custom_pue = $8,
+        custom_carbon_intensity = $9,
         calculation_parameters = COALESCE($10, calculation_parameters),
         results = COALESCE($11, results),
         updated_at = NOW()
       WHERE id = $12
       RETURNING *
     `, [
-      token_count, model, context_length, context_window,
-      hardware, data_center_provider, data_center_region, custom_pue,
-      custom_carbon_intensity, calculation_parameters, results, calculationIdInt
+      token_count, model, finalContextLength, finalContextWindow,
+      finalHardware, finalDataCenterProvider, finalDataCenterRegion, finalCustomPue,
+      finalCustomCarbonIntensity, calculation_parameters, results, calculationIdInt
     ])
 
     res.json({ success: true, data: result.rows[0] })
@@ -384,13 +486,21 @@ router.post('/:id/recalculate', async (req, res) => {
       return res.status(400).json({ error: 'user_id is required' })
     }
 
+    const calculationIdInt = parseInt(id, 10)
+    if (isNaN(calculationIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid calculation ID' 
+      })
+    }
+
     // Get calculation with project info
     const calcResult = await pool.query(`
       SELECT c.*, p.calculation_preset_id
       FROM calculations c
       JOIN projects p ON c.project_id = p.id
       WHERE c.id = $1 AND p.user_id = $2
-    `, [id, user_id])
+    `, [calculationIdInt, user_id])
 
     if (calcResult.rows.length === 0) {
       return res.status(404).json({ error: 'Calculation not found' })
@@ -398,17 +508,49 @@ router.post('/:id/recalculate', async (req, res) => {
 
     const calc = calcResult.rows[0]
 
-    // Recalculate using the calculation API logic
-    // For now, we'll use the existing results structure
-    // In a full implementation, you'd call the calculation API here
+    const preset = getPresetById(calc.calculation_preset_id)
+    
+    if (!preset) {
+      return res.status(400).json({ 
+        success: false,
+        error: `Preset not found: ${calc.calculation_preset_id}` 
+      })
+    }
+
+    // Use preset values for context_length and context_window
+    // If calculation has NULL context values, use preset; otherwise use stored values (they're overrides)
+    const usePresetContext = calc.context_length === null || calc.context_length === undefined ||
+                             calc.context_window === null || calc.context_window === undefined
+    
+    const formData: TokenCalculatorFormData = {
+      tokenCount: calc.token_count,
+      model: calc.model,
+      contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
+      contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
+      hardware: calc.hardware || preset.configuration.hardware,
+      dataCenterProvider: calc.data_center_provider || preset.configuration.dataCenterProvider,
+      dataCenterRegion: calc.data_center_region || preset.configuration.dataCenterRegion,
+      customPue: calc.custom_pue || preset.configuration.customPue,
+      customCarbonIntensity: calc.custom_carbon_intensity || preset.configuration.customCarbonIntensity,
+    }
+
+    // Recalculate using the calculation engine
+    const newResults = sustainableAICalculator.calculateFromFormData(formData)
+
+    // Update calculation with new results
+    // Keep context values as NULL if they were NULL (indicating "use preset")
+    // Only update results, not context values (they should remain NULL to indicate preset usage)
     const updatedResult = await pool.query(`
       UPDATE calculations 
       SET 
-        updated_at = NOW(),
-        results = jsonb_set(results, '{recalculatedAt}', to_jsonb(NOW()::text))
-      WHERE id = $1
+        results = $1,
+        updated_at = NOW()
+      WHERE id = $2
       RETURNING *
-    `, [id])
+    `, [
+      JSON.stringify(newResults),
+      calculationIdInt
+    ])
 
     res.json({ success: true, data: updatedResult.rows[0] })
   } catch (error) {
@@ -428,32 +570,69 @@ router.post('/bulk-recalculate', async (req, res) => {
       })
     }
 
-    // Verify all calculations belong to user's projects
-    const checkResult = await pool.query(`
-      SELECT c.id FROM calculations c
+    // Get all calculations with their project presets
+    const calcResult = await pool.query(`
+      SELECT c.*, p.calculation_preset_id
+      FROM calculations c
       JOIN projects p ON c.project_id = p.id
       WHERE c.id = ANY($1::INTEGER[]) AND p.user_id = $2
     `, [calculation_ids, user_id])
 
-    if (checkResult.rows.length !== calculation_ids.length) {
+    if (calcResult.rows.length !== calculation_ids.length) {
       return res.status(400).json({ error: 'Some calculations not found or access denied' })
     }
 
-    // Recalculate all
-    const updatedResult = await pool.query(`
-      UPDATE calculations 
-      SET 
-        updated_at = NOW(),
-        results = jsonb_set(results, '{recalculatedAt}', to_jsonb(NOW()::text))
-      WHERE id = ANY($1::INTEGER[])
-      RETURNING id
-    `, [calculation_ids])
+    const updatedIds: number[] = []
+
+    // Recalculate each calculation
+    for (const calc of calcResult.rows) {
+      const preset = getPresetById(calc.calculation_preset_id)
+      
+      if (!preset) {
+        console.error(`Preset not found for calculation ${calc.id}: ${calc.calculation_preset_id}`)
+        continue
+      }
+
+      // Use preset values for context_length and context_window
+      // If calculation has NULL context values, use preset; otherwise use stored values (they're overrides)
+      const usePresetContext = calc.context_length === null || calc.context_length === undefined ||
+                               calc.context_window === null || calc.context_window === undefined
+      
+      const formData: TokenCalculatorFormData = {
+        tokenCount: calc.token_count,
+        model: calc.model,
+        contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
+        contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
+        hardware: calc.hardware || preset.configuration.hardware,
+        dataCenterProvider: calc.data_center_provider || preset.configuration.dataCenterProvider,
+        dataCenterRegion: calc.data_center_region || preset.configuration.dataCenterRegion,
+        customPue: calc.custom_pue || preset.configuration.customPue,
+        customCarbonIntensity: calc.custom_carbon_intensity || preset.configuration.customCarbonIntensity,
+      }
+
+      // Recalculate using the calculation engine
+      const newResults = sustainableAICalculator.calculateFromFormData(formData)
+
+      // Update calculation with new results
+      await pool.query(`
+        UPDATE calculations 
+        SET 
+          results = $1,
+          updated_at = NOW()
+        WHERE id = $2
+      `, [
+        JSON.stringify(newResults),
+        calc.id
+      ])
+
+      updatedIds.push(calc.id)
+    }
 
     res.json({ 
       success: true, 
       data: { 
-        updatedCount: updatedResult.rows.length,
-        calculationIds: updatedResult.rows.map(r => r.id)
+        updatedCount: updatedIds.length,
+        calculationIds: updatedIds
       }
     })
   } catch (error) {

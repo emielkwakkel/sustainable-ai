@@ -1,7 +1,56 @@
 import { Router } from 'express'
 import { Pool } from 'pg'
+import { sustainableAICalculator } from '@susai/core'
+import type { TokenCalculatorFormData } from '@susai/types'
 
 const router = Router()
+
+// Import preset definitions (matching csv-import.ts)
+interface ProjectPreset {
+  id: string
+  name: string
+  description: string
+  configuration: TokenCalculatorFormData
+}
+
+const projectPresets: ProjectPreset[] = [
+  {
+    id: 'gpt-4-research',
+    name: 'GPT-4 Token Research',
+    description: 'Based on Anu\'s Substack article "We can use tokens to track AI\'s carbon"',
+    configuration: {
+      tokenCount: 200,
+      model: 'gpt-4',
+      contextLength: 8000,
+      contextWindow: 1250,
+      hardware: 'nvidia-a100',
+      dataCenterProvider: 'aws',
+      dataCenterRegion: 'aws-asia-pacific-tokyo',
+      customPue: 1.1,
+      customCarbonIntensity: undefined,
+    },
+  },
+  {
+    id: 'cursor-ai',
+    name: 'Cursor.ai',
+    description: 'Based on Cursor\'s actual infrastructure as reported in The Pragmatic Engineer',
+    configuration: {
+      tokenCount: 1000,
+      model: 'gpt-4',
+      contextLength: 8000,
+      contextWindow: 1250,
+      hardware: 'nvidia-h100',
+      dataCenterProvider: 'azure',
+      dataCenterRegion: 'azure-virginia',
+      customPue: undefined,
+      customCarbonIntensity: undefined,
+    },
+  },
+]
+
+function getPresetById(id: string): ProjectPreset | undefined {
+  return projectPresets.find(preset => preset.id === id)
+}
 
 // Database connection
 const pool = new Pool({
@@ -75,14 +124,16 @@ router.post('/import', async (req, res) => {
       })
     }
 
-    // Verify project belongs to user
+    // Verify project belongs to user and get preset
     const projectCheck = await pool.query(`
-      SELECT id FROM projects WHERE id = $1 AND user_id = $2
+      SELECT id, calculation_preset_id FROM projects WHERE id = $1 AND user_id = $2
     `, [project_id, user_id])
 
     if (projectCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Project not found' })
     }
+
+    const projectPresetId = projectCheck.rows[0].calculation_preset_id
 
     // Fetch usage data from Cursor API
     const usageData = await fetchCursorUsageData(api_token, start_date, end_date)
@@ -107,7 +158,7 @@ router.post('/import', async (req, res) => {
     const importId = importResult.rows[0].id
 
     // Convert usage data to calculations
-    const calculations = await convertUsageDataToCalculations(usageData, project_id)
+    const calculations = await convertUsageDataToCalculations(usageData, project_id, projectPresetId)
     
     if (calculations.length === 0) {
       return res.json({ 
@@ -229,23 +280,47 @@ async function fetchCursorUsageData(apiToken: string, startDate: string, endDate
 }
 
 // Helper function to convert Cursor usage data to calculation format
-async function convertUsageDataToCalculations(usageData: any[], projectId: string) {
+async function convertUsageDataToCalculations(usageData: any[], projectId: string, projectPresetId: string) {
   const calculations = []
+
+  // Get preset configuration
+  const preset = getPresetById(projectPresetId)
+  if (!preset) {
+    throw new Error(`Preset not found: ${projectPresetId}`)
+  }
 
   for (const record of usageData) {
     try {
       // Map Cursor API data to our calculation format
+      const modelId = mapCursorModelToOurModel(record.model || record.Model)
+      
+      // Use preset configuration as base
+      const formData: TokenCalculatorFormData = {
+        tokenCount: record.totalTokens || record.total_tokens || 0,
+        model: modelId,
+        contextLength: preset.configuration.contextLength,
+        contextWindow: preset.configuration.contextWindow,
+        hardware: preset.configuration.hardware,
+        dataCenterProvider: preset.configuration.dataCenterProvider,
+        dataCenterRegion: preset.configuration.dataCenterRegion,
+        customPue: preset.configuration.customPue,
+        customCarbonIntensity: preset.configuration.customCarbonIntensity,
+      }
+
+      // Calculate emissions using the preset configuration
+      const calculationResult = sustainableAICalculator.calculateFromFormData(formData)
+
       const calculation = {
         project_id: projectId,
-        token_count: record.totalTokens || record.total_tokens || 0,
-        model: mapCursorModelToOurModel(record.model || record.Model),
-        context_length: 8000, // Default, could be derived from model
-        context_window: 1250,  // Default, could be derived from model
-        hardware: 'nvidia-a100', // Default hardware assumption
-        data_center_provider: 'aws', // Default provider
-        data_center_region: 'aws-us-east-1', // Default region
-        custom_pue: null,
-        custom_carbon_intensity: null,
+        token_count: formData.tokenCount,
+        model: modelId,
+        context_length: formData.contextLength,
+        context_window: formData.contextWindow,
+        hardware: formData.hardware,
+        data_center_provider: formData.dataCenterProvider,
+        data_center_region: formData.dataCenterRegion,
+        custom_pue: formData.customPue || null,
+        custom_carbon_intensity: formData.customCarbonIntensity || null,
         calculation_parameters: {
           inputTokens: record.inputTokens || record.input_tokens || 0,
           outputTokens: record.outputTokens || record.output_tokens || 0,
@@ -254,18 +329,7 @@ async function convertUsageDataToCalculations(usageData: any[], projectId: strin
           kind: record.kind || record.Kind || 'unknown',
           maxMode: record.maxMode || record.max_mode || 'No'
         },
-        results: {
-          // Placeholder - these would be calculated using our algorithm
-          energyJoules: 0,
-          energyKWh: 0,
-          carbonEmissionsGrams: 0,
-          totalEmissionsGrams: 0,
-          equivalentLightbulbMinutes: 0,
-          equivalentCarMiles: 0,
-          equivalentTreeHours: 0,
-          calculationVersion: '1.0.0',
-          algorithmHash: 'placeholder'
-        }
+        results: calculationResult,
       }
 
       calculations.push(calculation)

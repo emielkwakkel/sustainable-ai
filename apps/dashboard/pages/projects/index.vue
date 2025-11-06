@@ -128,7 +128,7 @@ import { ref, onMounted } from 'vue'
 import { Plus, Edit, Trash2, FolderPlus } from 'lucide-vue-next'
 import type { Project } from '~/types/watttime'
 import { useProjects } from '~/composables/useProjects'
-import { useProjectPresets } from '~/composables/useProjectPresets'
+import { usePresets } from '~/composables/usePresets'
 import CreateProjectModal from '~/components/CreateProjectModal.vue'
 import EditProjectModal from '~/components/EditProjectModal.vue'
 
@@ -139,7 +139,13 @@ useHead({
 
 // Composables
 const { projects, fetchProjects, deleteProject: deleteProjectApi } = useProjects()
-const { getPresetName } = useProjectPresets()
+const { presets } = usePresets()
+
+// Helper function
+const getPresetName = (presetId: string): string => {
+  const preset = presets.value.find(p => p.id === presetId)
+  return preset?.name || 'Unknown Preset'
+}
 
 // State
 const showCreateProjectModal = ref(false)

@@ -164,7 +164,7 @@
 import { ref } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
-import { useProjectPresets } from '~/composables/useProjectPresets'
+import { usePresets } from '~/composables/usePresets'
 
 // Props
 interface Props {
@@ -182,7 +182,12 @@ const emit = defineEmits<{
 
 // Composables
 const { calculateEmissions, validateFormData } = useTokenCalculator()
-const { getPresetConfiguration } = useProjectPresets()
+const { presets, loadPreset } = usePresets()
+
+// Helper function
+const getPresetConfiguration = (presetId: string) => {
+  return loadPreset(presetId)
+}
 
 // State
 const formData = ref({

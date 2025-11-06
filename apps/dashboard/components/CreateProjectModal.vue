@@ -56,12 +56,16 @@
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a preset</option>
-              <option value="gpt-4-token-research">GPT-4 Token Research</option>
-              <option value="cursor-ai">Cursor.ai</option>
-              <option value="claude-research">Claude Research</option>
-              <option value="llama-experiments">Llama Experiments</option>
-              <option value="general-ai-usage">General AI Usage</option>
-              <option value="custom">Custom Configuration</option>
+              <optgroup label="Default Presets">
+                <option v-for="preset in defaultPresets" :key="preset.id" :value="preset.id">
+                  {{ preset.name }}
+                </option>
+              </optgroup>
+              <optgroup v-if="customPresets.length > 0" label="Custom Presets">
+                <option v-for="preset in customPresets" :key="preset.id" :value="preset.id">
+                  {{ preset.name }}
+                </option>
+              </optgroup>
             </select>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               This preset will be used for all calculations in this project
@@ -98,9 +102,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useProjects } from '~/composables/useProjects'
+import { usePresets } from '~/composables/usePresets'
 
 // Emits
 const emit = defineEmits<{
@@ -110,12 +115,13 @@ const emit = defineEmits<{
 
 // Composables
 const { createProject } = useProjects()
+const { presets, defaultPresets, customPresets } = usePresets()
 
 // State
 const formData = ref({
   name: '',
   description: '',
-  calculation_preset_id: 'gpt-4-token-research'
+  calculation_preset_id: 'cursor-ai'
 })
 
 const loading = ref(false)
@@ -147,7 +153,7 @@ const handleSubmit = async () => {
     formData.value = {
       name: '',
       description: '',
-      calculation_preset_id: 'gpt-4-token-research'
+      calculation_preset_id: 'cursor-ai'
     }
 
     // Emit success
