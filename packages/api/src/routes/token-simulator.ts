@@ -15,7 +15,6 @@ import type {
   CreateRoundRequest,
   UpdateRoundRequest,
   TokenCountResult,
-  CostCalculationResult
 } from '@susai/types'
 
 const router = Router()

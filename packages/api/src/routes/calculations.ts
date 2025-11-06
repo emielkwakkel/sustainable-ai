@@ -2,55 +2,9 @@ import { Router } from 'express'
 import { Pool } from 'pg'
 import { sustainableAICalculator } from '@susai/core'
 import type { TokenCalculatorFormData } from '@susai/types'
+import { getPresetById } from '@susai/config'
 
 const router = Router()
-
-// Project preset configurations (matching frontend presets)
-interface ProjectPreset {
-  id: string
-  name: string
-  description: string
-  configuration: TokenCalculatorFormData
-}
-
-const projectPresets: ProjectPreset[] = [
-  {
-    id: 'gpt-4-research',
-    name: 'GPT-4 Token Research',
-    description: 'Based on Anu\'s Substack article "We can use tokens to track AI\'s carbon"',
-    configuration: {
-      tokenCount: 200,
-      model: 'gpt-4',
-      contextLength: 8000,
-      contextWindow: 1250,
-      hardware: 'nvidia-a100',
-      dataCenterProvider: 'aws',
-      dataCenterRegion: 'aws-asia-pacific-tokyo',
-      customPue: 1.1,
-      customCarbonIntensity: undefined,
-    },
-  },
-  {
-    id: 'cursor-ai',
-    name: 'Cursor.ai',
-    description: 'Based on Cursor\'s actual infrastructure as reported in The Pragmatic Engineer',
-    configuration: {
-      tokenCount: 1000,
-      model: 'gpt-4',
-      contextLength: 8000,
-      contextWindow: 1250,
-      hardware: 'nvidia-h100',
-      dataCenterProvider: 'azure',
-      dataCenterRegion: 'azure-virginia',
-      customPue: undefined,
-      customCarbonIntensity: undefined,
-    },
-  },
-]
-
-function getPresetById(id: string): ProjectPreset | undefined {
-  return projectPresets.find(preset => preset.id === id)
-}
 
 // Database connection
 const pool = new Pool({
@@ -527,11 +481,19 @@ router.post('/:id/recalculate', async (req, res) => {
       model: calc.model,
       contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
       contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
-      hardware: calc.hardware || preset.configuration.hardware,
-      dataCenterProvider: calc.data_center_provider || preset.configuration.dataCenterProvider,
-      dataCenterRegion: calc.data_center_region || preset.configuration.dataCenterRegion,
-      customPue: calc.custom_pue || preset.configuration.customPue,
-      customCarbonIntensity: calc.custom_carbon_intensity || preset.configuration.customCarbonIntensity,
+      // Always use current preset values for hardware/provider/region when recalculating
+      // This ensures consistency with the current preset configuration
+      hardware: preset.configuration.hardware,
+      dataCenterProvider: preset.configuration.dataCenterProvider,
+      dataCenterRegion: preset.configuration.dataCenterRegion,
+      // If custom_pue is NULL in DB, use preset value (which may be undefined for region defaults)
+      customPue: calc.custom_pue !== null && calc.custom_pue !== undefined 
+        ? calc.custom_pue 
+        : preset.configuration.customPue,
+      // If custom_carbon_intensity is NULL in DB, use preset value (which may be undefined for region defaults)
+      customCarbonIntensity: calc.custom_carbon_intensity !== null && calc.custom_carbon_intensity !== undefined
+        ? calc.custom_carbon_intensity
+        : preset.configuration.customCarbonIntensity,
     }
 
     // Recalculate using the calculation engine
@@ -603,11 +565,19 @@ router.post('/bulk-recalculate', async (req, res) => {
         model: calc.model,
         contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
         contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
-        hardware: calc.hardware || preset.configuration.hardware,
-        dataCenterProvider: calc.data_center_provider || preset.configuration.dataCenterProvider,
-        dataCenterRegion: calc.data_center_region || preset.configuration.dataCenterRegion,
-        customPue: calc.custom_pue || preset.configuration.customPue,
-        customCarbonIntensity: calc.custom_carbon_intensity || preset.configuration.customCarbonIntensity,
+        // Always use current preset values for hardware/provider/region when recalculating
+        // This ensures consistency with the current preset configuration
+        hardware: preset.configuration.hardware,
+        dataCenterProvider: preset.configuration.dataCenterProvider,
+        dataCenterRegion: preset.configuration.dataCenterRegion,
+        // If custom_pue is NULL in DB, use preset value (which may be undefined for region defaults)
+        customPue: calc.custom_pue !== null && calc.custom_pue !== undefined 
+          ? calc.custom_pue 
+          : preset.configuration.customPue,
+        // If custom_carbon_intensity is NULL in DB, use preset value (which may be undefined for region defaults)
+        customCarbonIntensity: calc.custom_carbon_intensity !== null && calc.custom_carbon_intensity !== undefined
+          ? calc.custom_carbon_intensity
+          : preset.configuration.customCarbonIntensity,
       }
 
       // Recalculate using the calculation engine

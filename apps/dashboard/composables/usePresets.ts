@@ -1,46 +1,19 @@
 import type { TokenCalculatorPreset, TokenCalculatorFormData, PresetManager } from '~/types/watttime'
+import { projectPresets } from '@susai/config'
 
 export const usePresets = (): PresetManager => {
   const STORAGE_KEY = 'token-calculator-presets'
   
-  // Default presets based on the user story
-  const defaultPresets: TokenCalculatorPreset[] = [
-    {
-      id: 'gpt-4-research',
-      name: 'GPT-4 Token Research',
-      isDefault: true,
-      description: 'Based on Anu\'s Substack article "We can use tokens to track AI\'s carbon"', // https://anuragsridharan.substack.com/p/we-can-use-tokens-to-track-ais-carbon
-      configuration: {
-        tokenCount: 200,
-        model: 'gpt-4',
-        contextLength: 8000,
-        contextWindow: 1250,
-        hardware: 'nvidia-a100',
-        dataCenterProvider: 'aws',
-        dataCenterRegion: 'aws-asia-pacific-tokyo',
-        customPue: 1.1,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: 'cursor-ai',
-      name: 'Cursor.ai',
-      isDefault: true,
-      description: 'Based on Cursor\'s actual infrastructure as reported in The Pragmatic Engineer',
-      configuration: {
-        tokenCount: 1000,
-        model: 'gpt-4',
-        contextLength: 8000,
-        contextWindow: 1250,
-        hardware: 'nvidia-h100',
-        dataCenterProvider: 'azure',
-        dataCenterRegion: 'azure-virginia' // Azure US data center
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ]
+  // Convert config presets to TokenCalculatorPreset format
+  const defaultPresets: TokenCalculatorPreset[] = projectPresets.map(preset => ({
+    id: preset.id,
+    name: preset.name,
+    isDefault: true,
+    description: preset.description,
+    configuration: preset.configuration,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }))
 
   // Load presets from localStorage
   const loadPresets = (): TokenCalculatorPreset[] => {

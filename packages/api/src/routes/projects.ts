@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import { Pool } from 'pg'
+import { sustainableAICalculator } from '@susai/core'
+import { getPresetById } from '@susai/config'
 
 const router = Router()
 
@@ -349,9 +351,9 @@ router.post('/:id/recalculate', async (req, res) => {
       })
     }
 
-    // Verify project belongs to user
+    // Verify project belongs to user and get preset
     const projectCheck = await pool.query(`
-      SELECT id FROM projects WHERE id = $1 AND user_id = $2
+      SELECT id, calculation_preset_id FROM projects WHERE id = $1 AND user_id = $2
     `, [projectIdInt, user_id])
 
     if (projectCheck.rows.length === 0) {
@@ -361,14 +363,103 @@ router.post('/:id/recalculate', async (req, res) => {
       })
     }
 
-    const result = await pool.query(`
-      SELECT recalculate_project_emissions($1::INTEGER, $2) as updated_count
-    `, [projectIdInt, algorithm_version || '1.0.0'])
+    const projectPresetId = projectCheck.rows[0].calculation_preset_id
+    const preset = getPresetById(projectPresetId)
+    
+    if (!preset) {
+      return res.status(400).json({ 
+        success: false,
+        error: `Preset not found: ${projectPresetId}` 
+      })
+    }
+
+    // Get all calculations for this project
+    const calcResult = await pool.query(`
+      SELECT c.*
+      FROM calculations c
+      WHERE c.project_id = $1
+    `, [projectIdInt])
+
+    let updatedCount = 0
+
+    // Recalculate each calculation
+    for (const calc of calcResult.rows) {
+      // Use preset values for context_length and context_window
+      // If calculation has NULL context values, use preset; otherwise use stored values (they're overrides)
+      const usePresetContext = calc.context_length === null || calc.context_length === undefined ||
+                               calc.context_window === null || calc.context_window === undefined
+      
+      // Determine customPue and customCarbonIntensity
+      // If DB has NULL, use preset value (which may be undefined for region defaults)
+      const finalCustomPue = calc.custom_pue !== null && calc.custom_pue !== undefined 
+        ? calc.custom_pue 
+        : preset.configuration.customPue
+      const finalCustomCarbonIntensity = calc.custom_carbon_intensity !== null && calc.custom_carbon_intensity !== undefined
+        ? calc.custom_carbon_intensity
+        : preset.configuration.customCarbonIntensity
+      
+      const formData: TokenCalculatorFormData = {
+        tokenCount: calc.token_count,
+        model: calc.model,
+        contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
+        contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
+        // Always use current preset values for hardware/provider/region when recalculating
+        // This ensures consistency with the current preset configuration
+        hardware: preset.configuration.hardware,
+        dataCenterProvider: preset.configuration.dataCenterProvider,
+        dataCenterRegion: preset.configuration.dataCenterRegion,
+        customPue: finalCustomPue,
+        customCarbonIntensity: finalCustomCarbonIntensity,
+      }
+
+      // Debug logging for first calculation
+      if (updatedCount === 0) {
+        console.log('Recalculating calculation:', {
+          id: calc.id,
+          tokenCount: calc.token_count,
+          model: calc.model,
+          hardware: formData.hardware,
+          dataCenterProvider: formData.dataCenterProvider,
+          dataCenterRegion: formData.dataCenterRegion,
+          customPue: formData.customPue,
+          customCarbonIntensity: formData.customCarbonIntensity,
+          contextLength: formData.contextLength,
+          contextWindow: formData.contextWindow,
+          presetId: projectPresetId
+        })
+      }
+
+      // Recalculate using the calculation engine
+      const newResults = sustainableAICalculator.calculateFromFormData(formData)
+
+      // Debug logging for first calculation
+      if (updatedCount === 0) {
+        console.log('Recalculation results:', {
+          totalEmissionsGrams: newResults.totalEmissionsGrams,
+          energyJoules: newResults.energyJoules,
+          energyKWh: newResults.energyKWh
+        })
+      }
+
+      // Update calculation with new results
+      await pool.query(`
+        UPDATE calculations 
+        SET 
+          results = $1,
+          updated_at = NOW()
+        WHERE id = $2
+      `, [
+        JSON.stringify(newResults),
+        calc.id
+      ])
+
+      updatedCount++
+    }
 
     res.json({ 
       success: true, 
       data: { 
-        updatedCount: result.rows[0].updated_count,
+        updatedCount,
         algorithmVersion: algorithm_version || '1.0.0'
       }
     })
