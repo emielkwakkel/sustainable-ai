@@ -43,3 +43,4 @@ ALTER TABLE user_settings ALTER COLUMN id SET DEFAULT nextval('user_settings_id_
 
 
 
+

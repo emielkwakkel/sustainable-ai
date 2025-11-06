@@ -27,8 +27,8 @@ export const useTokenCalculator = () => {
     const errors: string[] = []
 
     // Validate token count
-    if (formData.tokenCount < 1 || formData.tokenCount > 1000000) {
-      errors.push('Token count must be between 1 and 1,000,000')
+    if (formData.tokenCount < 1 || formData.tokenCount > 5000000000) {
+      errors.push('Token count must be between 1 and 5,000,000,000')
     }
 
     // Validate context length

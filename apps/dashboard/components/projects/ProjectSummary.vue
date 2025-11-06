@@ -29,7 +29,7 @@
         <div>
           <p class="text-sm text-green-700 dark:text-green-300">Total Tokens</p>
           <p class="text-2xl font-bold text-green-900 dark:text-green-200">
-            {{ formatNumber(totalTokens) }}
+            {{ totalTokens }}
           </p>
           <p class="text-xs text-green-600 dark:text-green-400 mt-1">
             Avg: {{ formatNumber(averageTokensPerTransaction) }} per transaction

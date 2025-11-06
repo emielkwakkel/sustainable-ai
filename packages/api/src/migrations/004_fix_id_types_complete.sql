@@ -110,3 +110,4 @@ GROUP BY p.id, p.name, DATE_TRUNC('month', c.created_at);
 
 
 
+

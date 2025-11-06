@@ -59,37 +59,6 @@
       </div>
     </div>
 
-    <!-- Summary Section -->
-    <div v-if="analytics" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Project Summary</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <div>
-          <span class="text-gray-500 dark:text-gray-400">Total Emissions:</span>
-          <span class="ml-2 font-medium text-gray-900 dark:text-white">
-            {{ formatCO2(analytics.totalEmissionsGrams) }}
-          </span>
-        </div>
-        <div>
-          <span class="text-gray-500 dark:text-gray-400">Total Energy:</span>
-          <span class="ml-2 font-medium text-gray-900 dark:text-white">
-            {{ formatEnergy(analytics.totalEnergyJoules) }}
-          </span>
-        </div>
-        <div>
-          <span class="text-gray-500 dark:text-gray-400">Total Calculations:</span>
-          <span class="ml-2 font-medium text-gray-900 dark:text-white">
-            {{ analytics.calculationCount }}
-          </span>
-        </div>
-        <div>
-          <span class="text-gray-500 dark:text-gray-400">Avg per Token:</span>
-          <span class="ml-2 font-medium text-gray-900 dark:text-white">
-            {{ formatCO2(analytics.averageEmissionsPerToken) }}
-          </span>
-        </div>
-      </div>
-    </div>
-
     <!-- Analytics Summary Cards -->
     <ProjectSummary :analytics="analytics" :calculations="chartCalculations" />
 
