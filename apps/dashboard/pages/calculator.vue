@@ -21,276 +21,14 @@
           </div>
           
           <form @submit.prevent="calculate" class="space-y-4">
-            <!-- Token Input Mode Toggle -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Token Input Mode *
-              </label>
-              <div class="flex gap-4">
-                <label class="flex items-center">
-                  <input
-                    type="radio"
-                    v-model="useDetailedTokens"
-                    :value="false"
-                    class="mr-2"
-                  />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Total Tokens</span>
-                </label>
-                <label class="flex items-center">
-                  <input
-                    type="radio"
-                    v-model="useDetailedTokens"
-                    :value="true"
-                    class="mr-2"
-                  />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Detailed Breakdown</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Token Count (Simple Mode) -->
-            <div v-if="!useDetailedTokens">
-              <label for="tokenCount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Number of Tokens
-              </label>
-              <input
-                id="tokenCount"
-                v-model.number="formData.tokenCount"
-                type="number"
-                min="1"
-                max="5000000000"
-                :required="!useDetailedTokens"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter number of tokens"
-              />
-            </div>
-
-            <!-- Detailed Token Breakdown -->
-            <div v-if="useDetailedTokens" class="space-y-3">
-              <div>
-                <label for="inputWithCache" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Input (w/ Cache Write)
-                </label>
-                <input
-                  id="inputWithCache"
-                  v-model.number="formData.inputWithCache"
-                  type="number"
-                  min="0"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label for="inputWithoutCache" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Input (w/o Cache Write)
-                </label>
-                <input
-                  id="inputWithoutCache"
-                  v-model.number="formData.inputWithoutCache"
-                  type="number"
-                  min="0"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label for="cacheRead" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Cache Read
-                </label>
-                <input
-                  id="cacheRead"
-                  v-model.number="formData.cacheRead"
-                  type="number"
-                  min="0"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label for="outputTokens" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Output Tokens
-                </label>
-                <input
-                  id="outputTokens"
-                  v-model.number="formData.outputTokens"
-                  type="number"
-                  min="0"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0"
-                />
-              </div>
-              
-              <!-- Token Weights Display -->
-              <div v-if="selectedModelWeights" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
-                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Token Weights ({{ formData.model }})</p>
-                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
-                  <div>Input (w/ Cache): {{ selectedModelWeights.inputWithCache }}×</div>
-                  <div>Input (w/o Cache): {{ selectedModelWeights.inputWithoutCache }}×</div>
-                  <div>Cache Read: {{ selectedModelWeights.cacheRead }}×</div>
-                  <div>Output: {{ selectedModelWeights.outputTokens }}×</div>
-                </div>
-              </div>
-
-              <!-- Weighted Token Count Display -->
-              <div v-if="weightedTokenCount > 0" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Weighted Token Count: <span class="font-bold">{{ Math.round(weightedTokenCount) }}</span>
-                </p>
-              </div>
-            </div>
-
-            <!-- Model Selection -->
-            <div>
-              <label for="model" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                AI Model
-              </label>
-              <select
-                id="model"
-                v-model="formData.model"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option v-for="model in aiModels" :key="model.id" :value="model.id">
-                  {{ model.name }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Context Window -->
-            <div>
-              <label for="contextWindow" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Context Window (tokens) *
-              </label>
-              <input
-                id="contextWindow"
-                v-model.number="formData.contextWindow"
-                type="number"
-                :min="100"
-                :max="selectedModelContextLength || 2000"
-                required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                :class="{ 'border-red-500 dark:border-red-500': contextWindowError }"
-                placeholder="Enter context window size"
-              />
-              <p v-if="selectedModelContextLength" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Maximum for selected model: {{ selectedModelContextLength.toLocaleString() }} tokens
-              </p>
-              <p v-if="contextWindowError" class="text-xs text-red-600 dark:text-red-400 mt-1">
-                {{ contextWindowError }}
-              </p>
-            </div>
-
-            <!-- Hardware Selection -->
-            <div>
-              <label for="hardware" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Hardware Type
-              </label>
-              <select
-                id="hardware"
-                v-model="formData.hardware"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option v-for="hardware in hardwareConfigs" :key="hardware.id" :value="hardware.id">
-                  {{ hardware.name }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Data Center Provider Selection -->
-            <div>
-              <label for="dataCenterProvider" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Data Center Provider
-              </label>
-              <select
-                id="dataCenterProvider"
-                v-model="formData.dataCenterProvider"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option v-for="provider in dataCenterProviders" :key="provider.id" :value="provider.id">
-                  {{ provider.name }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Data Center Region Selection -->
-            <div>
-              <label for="dataCenterRegion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Data Center Region
-              </label>
-              <select
-                id="dataCenterRegion"
-                v-model="formData.dataCenterRegion"
-                :disabled="!formData.dataCenterProvider"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-              >
-                <option value="">Select a region...</option>
-                <option v-for="region in availableRegions" :key="region.id" :value="region.id">
-                  {{ region.name }} ({{ region.region }})
-                </option>
-              </select>
-              <p v-if="selectedRegionPue" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                PUE: {{ selectedRegionPue }} | Carbon Intensity: {{ selectedRegionCarbonIntensity }} kg CO₂/kWh
-              </p>
-            </div>
-
-            <!-- Advanced Options -->
-            <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Advanced Options</h3>
-              
-              <div class="space-y-4">
-                <div>
-                  <label class="flex items-center">
-                    <input
-                      v-model="useCustomPue"
-                      type="checkbox"
-                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Override PUE</span>
-                  </label>
-                  <div v-if="!useCustomPue && selectedRegionPue" class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <p class="text-sm text-blue-700 dark:text-blue-300">
-                      Using region PUE: <span class="font-medium">{{ selectedRegionPue }}</span>
-                    </p>
-                  </div>
-                  <input
-                    v-if="useCustomPue"
-                    v-model.number="formData.customPue"
-                    type="number"
-                    step="0.01"
-                    min="1.0"
-                    max="3.0"
-                    class="mt-2 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="PUE (1.0 - 3.0)"
-                  />
-                </div>
-
-                <div>
-                  <label class="flex items-center">
-                    <input
-                      v-model="useCustomCarbonIntensity"
-                      type="checkbox"
-                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Override carbon intensity</span>
-                  </label>
-                  <div v-if="!useCustomCarbonIntensity && selectedRegionCarbonIntensity" class="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <p class="text-sm text-green-700 dark:text-green-300">
-                      Using region carbon intensity: <span class="font-medium">{{ selectedRegionCarbonIntensity }} kg CO₂/kWh</span>
-                    </p>
-                  </div>
-                  <input
-                    v-if="useCustomCarbonIntensity"
-                    v-model.number="formData.customCarbonIntensity"
-                    type="number"
-                    step="0.001"
-                    min="0.0"
-                    max="1.0"
-                    class="mt-2 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="kg CO₂/kWh (0.0 - 1.0)"
-                  />
-                </div>
-              </div>
-            </div>
-
+            <TokenCalculatorForm
+              v-model:form-data="formData"
+              v-model:use-detailed-tokens="useDetailedTokens"
+              v-model:use-custom-pue="useCustomPue"
+              v-model:use-custom-carbon-intensity="useCustomCarbonIntensity"
+              :context-window-error="contextWindowError"
+            />
+            
             <!-- Calculate Button -->
             <button
               type="submit"
@@ -306,95 +44,12 @@
 
       <!-- Results Display -->
       <div class="space-y-6">
-        <div v-if="calculationResult" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Results</h2>
-          
-          <div class="space-y-4">
-            <!-- Energy Results -->
-            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-blue-900 dark:text-blue-200 mb-2">Energy Consumption</h3>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-2xl font-bold text-blue-900 dark:text-blue-200">
-                    {{ formatEnergyJoules(calculationResult.energyJoules) }}
-                  </p>
-                  <p class="text-sm text-blue-700 dark:text-blue-300">Energy</p>
-                </div>
-                <div>
-                  <p class="text-2xl font-bold text-blue-900 dark:text-blue-200">
-                    {{ formatEnergyWh(calculationResult.energyJoules) }}
-                  </p>
-                  <p class="text-sm text-blue-700 dark:text-blue-300">Energy</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Carbon Emissions -->
-            <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-red-900 dark:text-red-200 mb-2">Carbon Emissions</h3>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-2xl font-bold text-red-900 dark:text-red-200">
-                    {{ formatCO2(calculationResult.carbonEmissionsGrams, 4) }}
-                  </p>
-                  <p class="text-sm text-red-700 dark:text-red-300">per token</p>
-                </div>
-                <div>
-                  <p class="text-2xl font-bold text-red-900 dark:text-red-200">
-                    {{ formatCO2(calculationResult.totalEmissionsGrams, 2) }}
-                  </p>
-                  <p class="text-sm text-red-700 dark:text-red-300">total</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Comparison Metrics -->
-            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-green-900 dark:text-green-200 mb-2">Equivalent To</h3>
-              <div class="space-y-2">
-                <div class="flex justify-between">
-                  <span class="text-green-700 dark:text-green-300">Lightbulb (10W):</span>
-                  <span class="font-medium text-green-900 dark:text-green-200">
-                    {{ formatDuration(calculationResult.equivalentLightbulbMinutes) }}
-                  </span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-green-700 dark:text-green-300">Car miles:</span>
-                  <span class="font-medium text-green-900 dark:text-green-200">
-                    {{ formatNumber(calculationResult.equivalentCarMiles, 2) }} miles
-                  </span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-green-700 dark:text-green-300">Tree absorption:</span>
-                  <span class="font-medium text-green-900 dark:text-green-200">
-                    {{ formatDuration(calculationResult.equivalentTreeHours * 60) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Export Button -->
-            <button
-              @click="exportResults"
-              class="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Export Results
-            </button>
-          </div>
-        </div>
-
-        <!-- Default State -->
-        <div v-else class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center">
-          <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Calculator class="w-8 h-8 text-gray-400 dark:text-gray-500" />
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Ready to Calculate
-          </h3>
-          <p class="text-gray-600 dark:text-gray-400">
-            Enter your token count and configuration to see the carbon footprint
-          </p>
-        </div>
+        <TokenCalculatorResults
+          v-if="calculationResult"
+          :result="calculationResult"
+          @export="exportResults"
+        />
+        <TokenCalculatorPlaceholder v-else />
       </div>
     </div>
   </div>
@@ -402,10 +57,11 @@
 
 <script setup lang="ts">
 import { nextTick, computed } from 'vue'
-import { Calculator } from 'lucide-vue-next'
-import type { TokenCalculatorFormData, CalculationResult, AIModel } from '~/types/watttime'
+import type { TokenCalculatorFormData, CalculationResult } from '~/types/watttime'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
-import { formatEnergyJoules, formatEnergyWh, formatCO2, formatDuration } from '~/utils/formatting'
+import TokenCalculatorForm from '~/components/token-calculator/TokenCalculatorForm.vue'
+import TokenCalculatorResults from '~/components/token-calculator/TokenCalculatorResults.vue'
+import TokenCalculatorPlaceholder from '~/components/token-calculator/TokenCalculatorPlaceholder.vue'
 
 // Set page title
 useHead({
@@ -414,12 +70,8 @@ useHead({
 
 // Composables
 const { 
-  aiModels, 
-  hardwareConfigs, 
-  dataCenterProviders,
-  getRegionsForProvider,
-  getPueForRegion,
-  getCarbonIntensityForRegion,
+  aiModels,
+  isLoadingModels,
   calculateEmissions, 
   validateFormData,
   formatNumber,
@@ -432,8 +84,8 @@ const {
 const useDetailedTokens = ref(false)
 const formData = ref<TokenCalculatorFormData>({
   tokenCount: 1000,
-  model: 'gpt-4',
-  contextLength: 8000, // Set from model, used for validation
+  model: '', // Will be set when models are loaded from API
+  contextLength: 0, // Will be set from selected model
   contextWindow: 1250, // User-editable, actual processing amount
   hardware: 'nvidia-a100',
   dataCenterProvider: 'aws',
@@ -452,13 +104,6 @@ const useCustomPue = ref(false)
 const useCustomCarbonIntensity = ref(false)
 const contextWindowError = ref<string | null>(null)
 
-// Computed: Get selected model's token weights
-const selectedModelWeights = computed(() => {
-  if (!formData.value.model) return null
-  const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
-  return model?.tokenWeights || null
-})
-
 // Computed: Get selected model's context length (maximum capacity)
 const selectedModelContextLength = computed(() => {
   if (!formData.value.model) return null
@@ -469,11 +114,6 @@ const selectedModelContextLength = computed(() => {
 // Computed: Calculate weighted token count
 const weightedTokenCount = computed(() => {
   if (!useDetailedTokens.value || !formData.value.model) return 0
-  // Note: calculateWeightedTokens is now async, but computed can't be async
-  // For now, we'll calculate synchronously using the model from the reactive list
-  const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
-  const weights = model?.tokenWeights
-  
   return calculateWeightedTokens(
     formData.value.inputWithCache || 0,
     formData.value.inputWithoutCache || 0,
@@ -481,19 +121,6 @@ const weightedTokenCount = computed(() => {
     formData.value.outputTokens || 0,
     formData.value.model
   )
-})
-
-// Computed properties for data center regions
-const availableRegions = computed(() => {
-  return getRegionsForProvider(formData.value.dataCenterProvider)
-})
-
-const selectedRegionPue = computed(() => {
-  return getPueForRegion(formData.value.dataCenterProvider, formData.value.dataCenterRegion)
-})
-
-const selectedRegionCarbonIntensity = computed(() => {
-  return getCarbonIntensityForRegion(formData.value.dataCenterProvider, formData.value.dataCenterRegion)
 })
 
 // Methods
@@ -601,8 +228,21 @@ const handlePresetLoaded = async (configuration: TokenCalculatorFormData) => {
   }
 }
 
+// Auto-select first model when models are loaded from API
+watch([aiModels, isLoadingModels], ([models, isLoading]) => {
+  // Only auto-select if models are loaded, not currently loading, and formData doesn't have a model yet
+  if (!isLoading && models.length > 0 && !formData.value.model) {
+    const firstModel = models[0]
+    if (firstModel) {
+      formData.value.model = firstModel.id
+      formData.value.contextLength = firstModel.contextLength
+    }
+  }
+}, { immediate: true })
+
 // Auto-update context length when model changes (for validation)
 watch(() => formData.value.model, (newModel: string) => {
+  if (!newModel) return
   const selectedModel = aiModels.value.find(m => m.id === newModel || m.name === newModel)
   if (selectedModel) {
     // Set context length from model (used for validation, not displayed)
@@ -620,25 +260,7 @@ watch([() => formData.value.contextWindow, selectedModelContextLength], ([window
   }
 }, { immediate: true })
 
-// Auto-fill PUE when region changes
-watch(() => formData.value.dataCenterRegion, (newRegion) => {
-  if (newRegion && !useCustomPue.value) {
-    const pue = selectedRegionPue.value
-    if (pue !== null) {
-      formData.value.customPue = pue
-    }
-  }
-})
-
-// Auto-fill carbon intensity when region changes
-watch(() => formData.value.dataCenterRegion, (newRegion) => {
-  if (newRegion && !useCustomCarbonIntensity.value) {
-    const carbonIntensity = selectedRegionCarbonIntensity.value
-    if (carbonIntensity !== null) {
-      formData.value.customCarbonIntensity = carbonIntensity
-    }
-  }
-})
+// Note: PUE and carbon intensity auto-fill is now handled in TokenCalculatorForm component
 
 // Reset region when provider changes
 watch(() => formData.value.dataCenterProvider, () => {
@@ -655,6 +277,9 @@ watch(() => formData.value.dataCenterProvider, () => {
 
 // Auto-calculate when form data changes
 watch([formData, useDetailedTokens], () => {
+  // Don't calculate if model is not selected yet
+  if (!formData.value.model) return
+  
   const hasValidInput = useDetailedTokens.value 
     ? (weightedTokenCount.value > 0)
     : (formData.value.tokenCount > 0)

@@ -15,224 +15,13 @@
         </div>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Token Input Mode Toggle -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Token Input Mode *
-            </label>
-            <div class="flex gap-4">
-              <label class="flex items-center">
-                <input
-                  type="radio"
-                  v-model="useDetailedTokens"
-                  :value="false"
-                  class="mr-2"
-                />
-                <span class="text-sm text-gray-700 dark:text-gray-300">Total Tokens</span>
-              </label>
-              <label class="flex items-center">
-                <input
-                  type="radio"
-                  v-model="useDetailedTokens"
-                  :value="true"
-                  class="mr-2"
-                />
-                <span class="text-sm text-gray-700 dark:text-gray-300">Detailed Breakdown</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Token Count (Simple Mode) -->
-          <div v-if="!useDetailedTokens">
-            <label for="token_count" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Number of Tokens *
-            </label>
-            <input
-              id="token_count"
-              v-model.number="formData.token_count"
-              type="number"
-              min="1"
-              max="1000000"
-              :required="!useDetailedTokens"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter number of tokens"
-            />
-          </div>
-
-          <!-- Detailed Token Breakdown -->
-          <div v-if="useDetailedTokens" class="space-y-3">
-            <div>
-              <label for="input_with_cache" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Input (w/ Cache Write)
-              </label>
-              <input
-                id="input_with_cache"
-                v-model.number="formData.input_with_cache"
-                type="number"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label for="input_without_cache" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Input (w/o Cache Write)
-              </label>
-              <input
-                id="input_without_cache"
-                v-model.number="formData.input_without_cache"
-                type="number"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label for="cache_read" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Cache Read
-              </label>
-              <input
-                id="cache_read"
-                v-model.number="formData.cache_read"
-                type="number"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label for="output_tokens" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Output Tokens
-              </label>
-              <input
-                id="output_tokens"
-                v-model.number="formData.output_tokens"
-                type="number"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-              />
-            </div>
-            
-            <!-- Token Weights Display -->
-            <div v-if="selectedModelWeights" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Token Weights ({{ formData.model }})</p>
-              <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <div>Input (w/ Cache): {{ selectedModelWeights.inputWithCache }}×</div>
-                <div>Input (w/o Cache): {{ selectedModelWeights.inputWithoutCache }}×</div>
-                <div>Cache Read: {{ selectedModelWeights.cacheRead }}×</div>
-                <div>Output: {{ selectedModelWeights.outputTokens }}×</div>
-              </div>
-            </div>
-
-            <!-- Weighted Token Count Display -->
-            <div v-if="weightedTokenCount > 0" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Weighted Token Count: <span class="font-bold">{{ Math.round(weightedTokenCount) }}</span>
-              </p>
-            </div>
-          </div>
-
-          <!-- Model Selection -->
-          <div>
-            <label for="model" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              AI Model *
-            </label>
-            <select
-              id="model"
-              v-model="formData.model"
-              required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select a model</option>
-              <option value="gpt-4">GPT-4</option>
-              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              <option value="claude-3-opus">Claude 3 Opus</option>
-              <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-              <option value="llama-2-70b">Llama 2 70B</option>
-              <option value="sonnet-4.5">Sonnet 4.5</option>
-              <option value="composer-1">Composer 1</option>
-            </select>
-          </div>
-
-          <!-- Context Length -->
-          <div>
-            <label for="context_length" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Context Length (tokens)
-            </label>
-            <input
-              id="context_length"
-              v-model.number="formData.context_length"
-              type="number"
-              min="1000"
-              max="500000"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <!-- Context Window -->
-          <div>
-            <label for="context_window" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Context Window (tokens)
-            </label>
-            <input
-              id="context_window"
-              v-model.number="formData.context_window"
-              type="number"
-              min="100"
-              max="2000"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <!-- Hardware Selection -->
-          <div>
-            <label for="hardware" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Hardware Type
-            </label>
-            <select
-              id="hardware"
-              v-model="formData.hardware"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="nvidia-a100">NVIDIA A100</option>
-              <option value="nvidia-v100">NVIDIA V100</option>
-              <option value="nvidia-h100">NVIDIA H100</option>
-            </select>
-          </div>
-
-          <!-- Data Center Provider -->
-          <div>
-            <label for="data_center_provider" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Data Center Provider
-            </label>
-            <select
-              id="data_center_provider"
-              v-model="formData.data_center_provider"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="aws">Amazon Web Services</option>
-              <option value="google-cloud">Google Cloud</option>
-              <option value="azure">Microsoft Azure</option>
-            </select>
-          </div>
-
-          <!-- Data Center Region -->
-          <div>
-            <label for="data_center_region" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Data Center Region
-            </label>
-            <select
-              id="data_center_region"
-              v-model="formData.data_center_region"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="aws-us-east">AWS US East (N. Virginia)</option>
-              <option value="aws-us-west">AWS US West (Oregon)</option>
-              <option value="google-oregon">Google Cloud Oregon</option>
-              <option value="google-iowa">Google Cloud Iowa</option>
-            </select>
-          </div>
+          <TokenCalculatorForm
+            v-model:form-data="calculatorFormData"
+            v-model:use-detailed-tokens="useDetailedTokens"
+            v-model:use-custom-pue="useCustomPue"
+            v-model:use-custom-carbon-intensity="useCustomCarbonIntensity"
+            :context-window-error="contextWindowError"
+          />
 
           <!-- Error Message -->
           <div v-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
@@ -264,10 +53,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { X } from 'lucide-vue-next'
+import type { TokenCalculatorFormData } from '~/types/watttime'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
 import { usePresets } from '~/composables/usePresets'
+import { useProject } from '~/composables/useProject'
+import TokenCalculatorForm from '~/components/token-calculator/TokenCalculatorForm.vue'
 
 // Props
 interface Props {
@@ -284,8 +76,9 @@ const emit = defineEmits<{
 }>()
 
 // Composables
-const { calculateEmissions, validateFormData, calculateWeightedTokens, aiModels } = useTokenCalculator()
+const { calculateEmissions, validateFormData, calculateWeightedTokens, aiModels, isLoadingModels } = useTokenCalculator()
 const { presets, loadPreset } = usePresets()
+const { addCalculation } = useProject(props.projectId)
 
 // Helper function
 const getPresetConfiguration = (presetId: string) => {
@@ -294,58 +87,103 @@ const getPresetConfiguration = (presetId: string) => {
 
 // State
 const useDetailedTokens = ref(false)
-const formData = ref({
-  token_count: 1000,
-  model: 'gpt-4',
-  context_length: 8000,
-  context_window: 1250,
+const useCustomPue = ref(false)
+const useCustomCarbonIntensity = ref(false)
+const contextWindowError = ref<string | null>(null)
+
+// Calculator form data (camelCase format)
+const calculatorFormData = ref<TokenCalculatorFormData>({
+  tokenCount: 1000,
+  model: '', // Will be set when models are loaded from API
+  contextLength: 0, // Will be set from selected model
+  contextWindow: 1250,
   hardware: 'nvidia-a100',
-  data_center_provider: 'aws',
-  data_center_region: 'aws-us-east',
-  input_with_cache: 0,
-  input_without_cache: 0,
-  cache_read: 0,
-  output_tokens: 0
+  dataCenterProvider: 'aws',
+  dataCenterRegion: 'aws-us-east',
+  inputWithCache: 0,
+  inputWithoutCache: 0,
+  cacheRead: 0,
+  outputTokens: 0,
+  useDetailedTokens: false
 })
 
-// Computed: Get selected model's token weights
-const selectedModelWeights = computed(() => {
-  if (!formData.value.model) return null
-  const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
-  return model?.tokenWeights || null
-})
-
-// Computed: Calculate weighted token count
-const weightedTokenCount = computed(() => {
-  if (!useDetailedTokens.value || !formData.value.model) return 0
-  return calculateWeightedTokens(
-    formData.value.input_with_cache || 0,
-    formData.value.input_without_cache || 0,
-    formData.value.cache_read || 0,
-    formData.value.output_tokens || 0,
-    formData.value.model
-  )
+// Legacy form data (snake_case format) - computed from calculatorFormData for API compatibility
+const formData = computed({
+  get: () => ({
+    token_count: calculatorFormData.value.tokenCount,
+    model: calculatorFormData.value.model,
+    context_length: calculatorFormData.value.contextLength,
+    context_window: calculatorFormData.value.contextWindow,
+    hardware: calculatorFormData.value.hardware,
+    data_center_provider: calculatorFormData.value.dataCenterProvider,
+    data_center_region: calculatorFormData.value.dataCenterRegion,
+    input_with_cache: calculatorFormData.value.inputWithCache || 0,
+    input_without_cache: calculatorFormData.value.inputWithoutCache || 0,
+    cache_read: calculatorFormData.value.cacheRead || 0,
+    output_tokens: calculatorFormData.value.outputTokens || 0
+  }),
+  set: (val) => {
+    calculatorFormData.value = {
+      tokenCount: val.token_count,
+      model: val.model,
+      contextLength: val.context_length,
+      contextWindow: val.context_window,
+      hardware: val.hardware,
+      dataCenterProvider: val.data_center_provider,
+      dataCenterRegion: val.data_center_region,
+      inputWithCache: val.input_with_cache || 0,
+      inputWithoutCache: val.input_without_cache || 0,
+      cacheRead: val.cache_read || 0,
+      outputTokens: val.output_tokens || 0,
+      useDetailedTokens: useDetailedTokens.value
+    }
+  }
 })
 
 // Initialize form with project preset if available
 if (props.projectPresetId) {
   const presetConfig = getPresetConfiguration(props.projectPresetId)
   if (presetConfig) {
-    formData.value = {
-      token_count: presetConfig.tokenCount,
-      model: presetConfig.model,
-      context_length: presetConfig.contextLength,
-      context_window: presetConfig.contextWindow,
-      hardware: presetConfig.hardware,
-      data_center_provider: presetConfig.dataCenterProvider,
-      data_center_region: presetConfig.dataCenterRegion,
-      input_with_cache: 0,
-      input_without_cache: 0,
-      cache_read: 0,
-      output_tokens: 0
+    calculatorFormData.value = {
+      ...presetConfig,
+      inputWithCache: 0,
+      inputWithoutCache: 0,
+      cacheRead: 0,
+      outputTokens: 0,
+      useDetailedTokens: useDetailedTokens.value
     }
   }
 }
+
+// Auto-select first model when models are loaded from API
+watch([aiModels, isLoadingModels], ([models, isLoading]) => {
+  // Only auto-select if models are loaded, not currently loading, and formData doesn't have a model yet
+  if (!isLoading && models.length > 0 && !calculatorFormData.value.model) {
+    const firstModel = models[0]
+    if (firstModel) {
+      calculatorFormData.value.model = firstModel.id
+      calculatorFormData.value.contextLength = firstModel.contextLength
+    }
+  }
+}, { immediate: true })
+
+// Auto-update context length when model changes
+watch(() => calculatorFormData.value.model, (newModel: string) => {
+  if (!newModel) return
+  const selectedModel = aiModels.value.find(m => m.id === newModel || m.name === newModel)
+  if (selectedModel) {
+    calculatorFormData.value.contextLength = selectedModel.contextLength
+  }
+})
+
+// Watch for context window validation
+watch([() => calculatorFormData.value.contextWindow, () => calculatorFormData.value.contextLength], ([window, maxLength]) => {
+  if (window && maxLength && window > maxLength) {
+    contextWindowError.value = `Context window cannot exceed model's maximum capacity of ${maxLength.toLocaleString()} tokens`
+  } else {
+    contextWindowError.value = null
+  }
+}, { immediate: true })
 
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -403,70 +241,66 @@ const handleSubmit = async () => {
       return
     }
 
-    // Calculate emissions
+    // Calculate emissions using core package
     const results = calculateEmissions(formDataForValidation)
 
-    // Prepare request body
-    // Store weighted tokens in calculation_parameters if detailed breakdown was used
-    let calculationParameters: any = {}
-    if (useDetailedTokens.value && results.weightedTokens !== undefined) {
-      calculationParameters.weightedTokens = results.weightedTokens
-    }
-
-    const requestBody: any = {
-      project_id: props.projectId,
-      token_count: totalTokenCount, // Always use total tokens (sum), not weighted
-      calculation_parameters: Object.keys(calculationParameters).length > 0 ? calculationParameters : null,
+    // Prepare calculation data for API (using useProject composable)
+    const calculationData: any = {
+      token_count: totalTokenCount,
       model: formData.value.model,
       context_length: formData.value.context_length,
       context_window: formData.value.context_window,
       hardware: formData.value.hardware,
       data_center_provider: formData.value.data_center_provider,
       data_center_region: formData.value.data_center_region,
-      results: results,
-      user_id: 'default-user' // TODO: Get from auth
+      results: results
+    }
+
+    // Add calculation parameters if detailed breakdown was used
+    if (useDetailedTokens.value && results.weightedTokens !== undefined) {
+      calculationData.calculation_parameters = {
+        weightedTokens: results.weightedTokens
+      }
     }
 
     // Add detailed token fields if using detailed mode
     if (useDetailedTokens.value) {
-      requestBody.cache_read = formData.value.cache_read || null
-      requestBody.output_tokens = formData.value.output_tokens || null
-      requestBody.input_with_cache = formData.value.input_with_cache || null
-      requestBody.input_without_cache = formData.value.input_without_cache || null
+      calculationData.cache_read = formData.value.cache_read || null
+      calculationData.output_tokens = formData.value.output_tokens || null
+      calculationData.input_with_cache = formData.value.input_with_cache || null
+      calculationData.input_without_cache = formData.value.input_without_cache || null
     }
 
-    // Add calculation to project
-    const response = await fetch('/api/calculations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    })
-    const data = await response.json()
-
-    if (data.success) {
-      // Reset form
-      useDetailedTokens.value = false
-      formData.value = {
-        token_count: 1000,
-        model: 'gpt-4',
-        context_length: 8000,
-        context_window: 1250,
-        hardware: 'nvidia-a100',
-        data_center_provider: 'aws',
-        data_center_region: 'aws-us-east',
-        input_with_cache: 0,
-        input_without_cache: 0,
-        cache_read: 0,
-        output_tokens: 0
-      }
-
-      // Emit success
-      emit('created')
-    } else {
-      throw new Error(data.error || 'Failed to add calculation')
+    // Add custom PUE and carbon intensity if provided
+    if (useCustomPue.value && calculatorFormData.value.customPue !== undefined) {
+      calculationData.custom_pue = calculatorFormData.value.customPue
     }
+    if (useCustomCarbonIntensity.value && calculatorFormData.value.customCarbonIntensity !== undefined) {
+      calculationData.custom_carbon_intensity = calculatorFormData.value.customCarbonIntensity
+    }
+
+    // Add calculation to project using useProject composable
+    await addCalculation(calculationData)
+
+    // Reset form
+    useDetailedTokens.value = false
+    calculatorFormData.value = {
+      tokenCount: 1000,
+      model: '', // Will be set when models are loaded from API
+      contextLength: 0, // Will be set from selected model
+      contextWindow: 1250,
+      hardware: 'nvidia-a100',
+      dataCenterProvider: 'aws',
+      dataCenterRegion: 'aws-us-east',
+      inputWithCache: 0,
+      inputWithoutCache: 0,
+      cacheRead: 0,
+      outputTokens: 0,
+      useDetailedTokens: false
+    }
+
+    // Emit success
+    emit('created')
   } catch (err) {
     console.error('Error adding calculation:', err)
     error.value = err instanceof Error ? err.message : 'Failed to add calculation'
@@ -475,3 +309,4 @@ const handleSubmit = async () => {
   }
 }
 </script>
+
