@@ -1,44 +1,116 @@
 import { Router } from 'express'
+import { Pool } from 'pg'
 import { 
-  aiModels, 
   hardwareConfigs, 
   dataCenterProviders,
-  getAIModelById,
   getHardwareConfigById,
   getDataCenterProviderById,
   getDataCenterRegionById,
   getRegionsForProvider
 } from '@susai/config'
-import type { ApiResponse } from '@susai/types'
+import type { ApiResponse, AIModel } from '@susai/types'
 
 const router = Router()
 
-// GET /api/config/models
-router.get('/models', (req, res) => {
-  const response: ApiResponse<typeof aiModels> = {
-    success: true,
-    data: aiModels
+// PostgreSQL database connection
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'sustainable_ai_db',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'password',
+})
+
+// Helper function to transform database row to AIModel
+function transformModelRow(row: any): AIModel {
+  return {
+    id: row.id,
+    name: row.name,
+    parameters: row.parameters,
+    contextLength: row.context_length,
+    contextWindow: row.context_window,
+    complexityFactor: parseFloat(row.complexity_factor),
+    tokenWeights: row.token_weights || undefined,
+    pricing: row.pricing || undefined,
+    isSystem: row.is_system || false
   }
-  res.json(response)
+}
+
+// GET /api/config/models
+router.get('/models', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, name, parameters, context_length, context_window,
+        token_weights, complexity_factor, pricing, is_system
+      FROM ai_models
+      ORDER BY name ASC
+    `)
+
+    const models = result.rows.map(transformModelRow)
+    const response: ApiResponse<AIModel[]> = {
+      success: true,
+      data: models
+    }
+    res.json(response)
+  } catch (error) {
+    console.error('Error fetching models:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch models from database'
+    } as ApiResponse<never>)
+  }
 })
 
 // GET /api/config/models/:id
-router.get('/models/:id', (req, res) => {
-  const { id } = req.params
-  const model = getAIModelById(id)
-  
-  if (!model) {
-    return res.status(404).json({
+router.get('/models/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // Check if id is a valid UUID format
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    
+    let result
+    if (isUUID) {
+      // If it's a UUID, compare directly with id column only
+      result = await pool.query(`
+        SELECT 
+          id, name, parameters, context_length, context_window,
+          token_weights, complexity_factor, pricing, is_system
+        FROM ai_models
+        WHERE id = $1::uuid
+      `, [id])
+    } else {
+      // If it's not a UUID, only compare with name (case-insensitive)
+      result = await pool.query(`
+        SELECT 
+          id, name, parameters, context_length, context_window,
+          token_weights, complexity_factor, pricing, is_system
+        FROM ai_models
+        WHERE LOWER(name) = LOWER($1)
+      `, [id])
+    }
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Model not found'
+      } as ApiResponse<never>)
+    }
+
+    const model = transformModelRow(result.rows[0])
+    const response: ApiResponse<AIModel> = {
+      success: true,
+      data: model
+    }
+    res.json(response)
+  } catch (error) {
+    console.error('Error fetching model:', error)
+    res.status(500).json({
       success: false,
-      error: 'Model not found'
+      error: 'Failed to fetch model'
     } as ApiResponse<never>)
   }
-
-  const response: ApiResponse<typeof model> = {
-    success: true,
-    data: model
-  }
-  res.json(response)
 })
 
 // GET /api/config/hardware

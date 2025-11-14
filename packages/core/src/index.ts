@@ -4,7 +4,8 @@ import type {
   CalculationEngine,
   FormValidationResult,
   TokenCalculatorFormData,
-  TokenWeights
+  TokenWeights,
+  AIModel
 } from '@susai/types'
 import { 
   getAIModelById, 
@@ -98,11 +99,10 @@ export class SustainableAICalculator implements CalculationEngine {
     const complexityAdjustedEnergyKwh = baseEnergyPerTokenKwh * model.complexityFactor
     
     // Apply context window adjustment
-    // For GPT-4 with 1250 token window, use the research paper factor of 0.372
-    // For other models, use square root scaling
-    const contextWindowFactor = (model.id === 'gpt-4' && params.contextWindow === 1250) 
-      ? 0.372 
-      : Math.sqrt(params.contextWindow / model.contextWindow)
+    // Formula from research paper: (actual_window / GPT-3_baseline_window)²
+    // GPT-3's context window is 2048 tokens (the baseline for energy calculations)
+    const GPT3_BASELINE_CONTEXT_WINDOW = 2048
+    const contextWindowFactor = Math.pow(params.contextWindow / GPT3_BASELINE_CONTEXT_WINDOW, 2)
     const contextAdjustedEnergyKwh = complexityAdjustedEnergyKwh * contextWindowFactor
     
     // Apply PUE adjustment
@@ -121,7 +121,7 @@ export class SustainableAICalculator implements CalculationEngine {
     const totalEmissionsGrams = carbonEmissionsPerTokenGrams * effectiveTokenCount
     
     // Calculate equivalent metrics using effective token count
-    const equivalentLightbulbMinutes = (energyKWh * effectiveTokenCount) / 0.01 // 10W lightbulb
+    const equivalentLightbulbMinutes = energyKWh / 0.01 // 10W lightbulb (energyKWh is already total energy)
     const equivalentCarMiles = (totalEmissionsGrams / 1000) * 2.3 // kg CO₂ per mile
     const equivalentTreeHours = totalEmissionsGrams / 0.022 // grams CO₂ absorbed per hour by a tree
 
@@ -182,9 +182,20 @@ export class SustainableAICalculator implements CalculationEngine {
 
   /**
    * Calculate emissions from form data
+   * @param formData - Form data with model ID or model object
+   * @param modelOverride - Optional model object. If provided, formData.model is ignored
    */
-  calculateFromFormData(formData: TokenCalculatorFormData): CalculationResult {
-    const model = getAIModelById(formData.model)
+  calculateFromFormData(formData: TokenCalculatorFormData, modelOverride?: AIModel): CalculationResult {
+    // Use provided model or try to get from config (will throw if not available)
+    let model: AIModel | undefined = modelOverride
+    if (!model) {
+      try {
+        model = getAIModelById(formData.model)
+      } catch (error) {
+        throw new Error(`Model '${formData.model}' not found. Models must be fetched from the database or API.`)
+      }
+    }
+    
     const hardware = getHardwareConfigById(formData.hardware)
     const dataCenter = getDataCenterRegionById(formData.dataCenterProvider, formData.dataCenterRegion)
 

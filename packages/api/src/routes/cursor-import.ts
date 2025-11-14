@@ -3,6 +3,7 @@ import { Pool } from 'pg'
 import { sustainableAICalculator } from '@susai/core'
 import type { TokenCalculatorFormData } from '@susai/types'
 import { getPresetById } from '@susai/config'
+import { fetchModelFromDB } from '../services/modelService'
 
 const router = Router()
 
@@ -263,8 +264,14 @@ async function convertUsageDataToCalculations(usageData: any[], projectId: strin
         customCarbonIntensity: preset.configuration.customCarbonIntensity,
       }
 
+      // Fetch model from database
+      const model = await fetchModelFromDB(modelId)
+      if (!model) {
+        throw new Error(`Model '${modelId}' not found`)
+      }
+
       // Calculate emissions using the preset configuration
-      const calculationResult = sustainableAICalculator.calculateFromFormData(formData)
+      const calculationResult = sustainableAICalculator.calculateFromFormData(formData, model)
 
       // Extract detailed token breakdown from Cursor API record
       const cacheRead = record.cacheRead || record.cache_read || 0

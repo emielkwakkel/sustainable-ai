@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { 
-  aiModels, 
   hardwareConfigs, 
   dataCenterProviders,
   getPueForRegion,
@@ -8,12 +7,6 @@ import {
 } from './index'
 
 describe('config', () => {
-  it('should export aiModels', () => {
-    expect(aiModels).toBeDefined()
-    expect(Array.isArray(aiModels)).toBe(true)
-    expect(aiModels.length).toBeGreaterThan(0)
-  })
-
   it('should export hardwareConfigs', () => {
     expect(hardwareConfigs).toBeDefined()
     expect(Array.isArray(hardwareConfigs)).toBe(true)

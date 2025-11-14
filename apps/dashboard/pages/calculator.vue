@@ -462,13 +462,18 @@ const useCustomCarbonIntensity = ref(false)
 // Computed: Get selected model's token weights
 const selectedModelWeights = computed(() => {
   if (!formData.value.model) return null
-  const model = aiModels.find(m => m.id === formData.value.model)
+  const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
   return model?.tokenWeights || null
 })
 
 // Computed: Calculate weighted token count
 const weightedTokenCount = computed(() => {
   if (!useDetailedTokens.value || !formData.value.model) return 0
+  // Note: calculateWeightedTokens is now async, but computed can't be async
+  // For now, we'll calculate synchronously using the model from the reactive list
+  const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
+  const weights = model?.tokenWeights
+  
   return calculateWeightedTokens(
     formData.value.inputWithCache || 0,
     formData.value.inputWithoutCache || 0,
@@ -501,6 +506,15 @@ const calculate = async () => {
       ...formData.value,
       tokenCount: useDetailedTokens.value ? weightedTokenCount.value : formData.value.tokenCount,
       useDetailedTokens: useDetailedTokens.value
+    }
+
+    // Only include detailed token fields when using detailed mode
+    // Otherwise, set them to undefined so the calculator uses tokenCount
+    if (!useDetailedTokens.value) {
+      formDataForValidation.inputWithCache = undefined
+      formDataForValidation.inputWithoutCache = undefined
+      formDataForValidation.cacheRead = undefined
+      formDataForValidation.outputTokens = undefined
     }
 
     // Validate form data
@@ -583,7 +597,7 @@ const handlePresetLoaded = async (configuration: TokenCalculatorFormData) => {
 
 // Auto-update context fields when model changes
 watch(() => formData.value.model, (newModel: string) => {
-  const selectedModel = aiModels.find((m: AIModel) => m.id === newModel)
+  const selectedModel = aiModels.value.find((m: AIModel) => m.id === newModel || m.name === newModel)
   if (selectedModel) {
     formData.value.contextLength = selectedModel.contextLength
     formData.value.contextWindow = selectedModel.contextWindow

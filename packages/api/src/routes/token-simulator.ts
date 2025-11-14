@@ -740,11 +740,13 @@ router.post('/costs/calculate', async (req, res) => {
     const {
       inputTokens,
       outputTokens,
-      model = 'gpt-4o'
+      model = 'gpt-4o',
+      useCachedInput = false
     }: {
       inputTokens: number
       outputTokens: number
-      model?: 'gpt-3.5-turbo' | 'gpt-4o'
+      model?: string
+      useCachedInput?: boolean
     } = req.body
 
     if (inputTokens === undefined || outputTokens === undefined) {
@@ -754,7 +756,18 @@ router.post('/costs/calculate', async (req, res) => {
       })
     }
 
-    const cost = calculateCost(inputTokens, outputTokens, model)
+    // Fetch model from database to get pricing
+    const { fetchModelFromDB } = await import('../services/modelService')
+    const modelData = await fetchModelFromDB(model)
+    
+    if (!modelData || !modelData.pricing) {
+      return res.status(404).json({
+        success: false,
+        error: `Model '${model}' not found or has no pricing information`
+      })
+    }
+
+    const cost = calculateCost(inputTokens, outputTokens, modelData.pricing, useCachedInput, model)
 
     res.json({ success: true, data: cost })
   } catch (error: any) {

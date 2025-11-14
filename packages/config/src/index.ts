@@ -12,3 +12,6 @@ export * from './presets'
 
 // Export pricing configuration
 export * from './pricing'
+
+// Export utilities
+export * from './utils/browser'

@@ -57,6 +57,9 @@
                     <div class="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10">
                       <div class="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg py-2 px-3 shadow-lg whitespace-nowrap">
                         ${{ model.pricing.input }} / 1M tokens
+                        <span v-if="model.pricing.cachedInput !== undefined" class="block mt-1 text-gray-400">
+                          Cached: ${{ model.pricing.cachedInput }} / 1M tokens
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -203,14 +206,17 @@
 
 <script setup lang="ts">
 import { Info } from 'lucide-vue-next'
-import type { ChatSummary } from '@susai/types'
-import { modelPricing } from '@susai/config'
+import type { ChatSummary, AIModel } from '@susai/types'
+import { fetchAIModels } from '@susai/config'
 import CostMultiplierModal from './CostMultiplierModal.vue'
 import CustomCostModal from './CustomCostModal.vue'
 
 const props = defineProps<{
   summary?: ChatSummary
 }>()
+
+// API URL
+const apiUrl = process.env.NUXT_PUBLIC_API_URL || 'https://localhost:3001'
 
 // Cost multipliers (not stored)
 const frequencyPerHour = ref<number | null>(null)
@@ -229,56 +235,73 @@ const newCustomCostName = ref('')
 const newCustomInputCost = ref<number | null>(null)
 const newCustomOutputCost = ref<number | null>(null)
 
-// Pricing from config
-const gpt35Pricing = modelPricing.find(p => p.model === 'gpt-3.5-turbo') || { input: 0.50, output: 1.50 }
-const gpt4oPricing = modelPricing.find(p => p.model === 'gpt-4o') || { input: 2.50, output: 10 }
-const gpt41Pricing = modelPricing.find(p => p.model === 'gpt-4.1') || { input: 2, output: 8 }
-const gpt5Pricing = modelPricing.find(p => p.model === 'gpt-5') || { input: 1.25, output: 10 }
+// Models with pricing from API
+const modelsWithPricing = ref<AIModel[]>([])
 
-// Default models configuration
+// Fetch models with pricing from API
+const fetchModels = async () => {
+  try {
+    const models = await fetchAIModels()
+    // Filter models that have pricing defined
+    modelsWithPricing.value = models.filter(model => model.pricing)
+  } catch (error) {
+    console.error('Error fetching models:', error)
+    modelsWithPricing.value = []
+  }
+}
+
+// Load models on mount
+onMounted(() => {
+  fetchModels()
+})
+
+// Default models configuration - dynamically built from API models with pricing
 interface ModelConfig {
   id: string
   name: string
-  pricing: { input: number; output: number }
+  pricing: { input: number; cachedInput: number; output: number }
   inputCost: number | string | undefined
   outputCost: number | string | undefined
   totalCost: number | string | undefined
 }
 
-const defaultModels = computed<ModelConfig[]>(() => [
-  {
-    id: 'gpt-3.5-turbo',
-    name: 'GPT-3.5 Turbo',
-    pricing: gpt35Pricing,
-    inputCost: props.summary?.gpt35_input_cost,
-    outputCost: props.summary?.gpt35_output_cost,
-    totalCost: props.summary?.gpt35_total_cost
-  },
-  {
-    id: 'gpt-4o',
-    name: 'GPT-4o',
-    pricing: gpt4oPricing,
-    inputCost: props.summary?.gpt4o_input_cost,
-    outputCost: props.summary?.gpt4o_output_cost,
-    totalCost: props.summary?.gpt4o_total_cost
-  },
-  {
-    id: 'gpt-4.1',
-    name: 'GPT-4.1',
-    pricing: gpt41Pricing,
-    inputCost: props.summary?.gpt41_input_cost,
-    outputCost: props.summary?.gpt41_output_cost,
-    totalCost: props.summary?.gpt41_total_cost
-  },
-  {
-    id: 'gpt-5',
-    name: 'GPT-5',
-    pricing: gpt5Pricing,
-    inputCost: props.summary?.gpt5_input_cost,
-    outputCost: props.summary?.gpt5_output_cost,
-    totalCost: props.summary?.gpt5_total_cost
-  }
-])
+const defaultModels = computed<ModelConfig[]>(() => {
+  return modelsWithPricing.value.map(model => {
+    // Map model name to summary cost fields
+    // This is a bit of a hack - we need to match model names to summary fields
+    let inputCost: number | string | undefined
+    let outputCost: number | string | undefined
+    let totalCost: number | string | undefined
+
+    const modelNameLower = model.name.toLowerCase()
+    if (modelNameLower.includes('gpt-3.5') || modelNameLower.includes('gpt3.5')) {
+      inputCost = props.summary?.gpt35_input_cost
+      outputCost = props.summary?.gpt35_output_cost
+      totalCost = props.summary?.gpt35_total_cost
+    } else if (modelNameLower.includes('gpt-4o') || modelNameLower.includes('gpt4o')) {
+      inputCost = props.summary?.gpt4o_input_cost
+      outputCost = props.summary?.gpt4o_output_cost
+      totalCost = props.summary?.gpt4o_total_cost
+    } else if (modelNameLower.includes('gpt-4.1') || modelNameLower.includes('gpt41')) {
+      inputCost = props.summary?.gpt41_input_cost
+      outputCost = props.summary?.gpt41_output_cost
+      totalCost = props.summary?.gpt41_total_cost
+    } else if (modelNameLower.includes('gpt-5') || modelNameLower.includes('gpt5')) {
+      inputCost = props.summary?.gpt5_input_cost
+      outputCost = props.summary?.gpt5_output_cost
+      totalCost = props.summary?.gpt5_total_cost
+    }
+
+    return {
+      id: model.id,
+      name: model.name,
+      pricing: model.pricing!,
+      inputCost,
+      outputCost,
+      totalCost
+    }
+  })
+})
 
 // Calculate multiplier
 const multiplier = computed(() => {

@@ -2,22 +2,40 @@ import type {
   TokenCalculatorFormData, 
   CalculationResult,
   AIModel,
-  HardwareConfig,
-  DataCenterRegion,
   TokenWeights
 } from '@susai/types'
 import { 
-  aiModels, 
   hardwareConfigs, 
   dataCenterProviders,
   getRegionsForProvider,
   getPueForRegion,
   getCarbonIntensityForRegion,
-  getAIModelById
+  fetchAIModels
 } from '@susai/config'
 import { sustainableAICalculator } from '@susai/core'
 
 export const useTokenCalculator = () => {
+  // Models from API (reactive)
+  const aiModels = ref<AIModel[]>([])
+  const isLoadingModels = ref(false)
+  const modelsError = ref<string | null>(null)
+
+  // Fetch models from API on initialization
+  onMounted(async () => {
+    isLoadingModels.value = true
+    modelsError.value = null
+    try {
+      const models = await fetchAIModels()
+      aiModels.value = models
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch models from API'
+      console.error('Failed to fetch models from API:', error)
+      modelsError.value = errorMessage
+      aiModels.value = []
+    } finally {
+      isLoadingModels.value = false
+    }
+  })
 
   // Calculate weighted tokens from detailed token breakdown
   const calculateWeightedTokens = (
@@ -31,7 +49,8 @@ export const useTokenCalculator = () => {
     // Get model-specific weights if model is provided
     let weights = tokenWeights
     if (!weights && modelId) {
-      const model = getAIModelById(modelId)
+      // Use model from reactive list (already fetched from API)
+      const model = aiModels.value.find(m => m.id === modelId || m.name === modelId)
       weights = model?.tokenWeights
     }
     
@@ -46,7 +65,15 @@ export const useTokenCalculator = () => {
 
   // Calculate energy and emissions using the core engine
   const calculateEmissions = (formData: TokenCalculatorFormData): CalculationResult => {
-    return sustainableAICalculator.calculateFromFormData(formData)
+    // Find the model from the reactive list (already fetched from API)
+    const model = aiModels.value.find(m => m.id === formData.model || m.name === formData.model)
+    
+    if (!model) {
+      throw new Error(`Model '${formData.model}' not found. Please ensure models are loaded from the API.`)
+    }
+    
+    // Pass the model as override to avoid the core trying to fetch it
+    return sustainableAICalculator.calculateFromFormData(formData, model)
   }
 
   // Validate form data using the core engine
@@ -122,7 +149,9 @@ export const useTokenCalculator = () => {
   }
 
   return {
-    aiModels,
+    aiModels: computed(() => aiModels.value),
+    isLoadingModels: computed(() => isLoadingModels.value),
+    modelsError: computed(() => modelsError.value),
     hardwareConfigs,
     dataCenterProviders,
     calculateEmissions,

@@ -268,7 +268,6 @@ import { ref, computed } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
 import { usePresets } from '~/composables/usePresets'
-import { getAIModelById } from '@susai/config'
 
 // Props
 interface Props {
@@ -312,7 +311,7 @@ const formData = ref({
 // Computed: Get selected model's token weights
 const selectedModelWeights = computed(() => {
   if (!formData.value.model) return null
-  const model = getAIModelById(formData.value.model)
+  const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
   return model?.tokenWeights || null
 })
 

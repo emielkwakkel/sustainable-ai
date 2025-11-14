@@ -4,8 +4,10 @@ import type {
   TokenCalculatorFormData, 
   CalculationResult, 
   ApiResponse,
-  FormValidationResult 
+  FormValidationResult
 } from '@susai/types'
+import { getHardwareConfigById, getDataCenterRegionById } from '@susai/config'
+import { fetchModelFromDB } from '../services/modelService'
 
 const router = Router()
 
@@ -19,7 +21,7 @@ interface CalculationResponse {
 }
 
 // POST /api/calculation/calculate
-router.post('/calculate', (req, res) => {
+router.post('/calculate', async (req, res) => {
   try {
     const { formData }: CalculationRequest = req.body
 
@@ -30,12 +32,31 @@ router.post('/calculate', (req, res) => {
       } as ApiResponse<never>)
     }
 
+    // Fetch model from database
+    const model = await fetchModelFromDB(formData.model)
+    if (!model) {
+      return res.status(404).json({
+        success: false,
+        error: `Model '${formData.model}' not found`
+      } as ApiResponse<never>)
+    }
+
+    const hardware = getHardwareConfigById(formData.hardware)
+    const dataCenter = getDataCenterRegionById(formData.dataCenterProvider, formData.dataCenterRegion)
+
+    if (!hardware || !dataCenter) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid hardware or data center configuration'
+      } as ApiResponse<never>)
+    }
+
     // Validate the form data
     const validation = sustainableAICalculator.validateParams({
       tokenCount: formData.tokenCount,
-      model: { id: formData.model, name: '', parameters: 0, contextLength: formData.contextLength, contextWindow: formData.contextWindow, complexityFactor: 1 },
-      hardware: { id: formData.hardware, name: '', powerConsumption: 0, tokensPerSecond: 0, efficiency: 0 },
-      dataCenter: { id: formData.dataCenterRegion, name: '', region: '', pue: 1, carbonIntensity: 0.415 },
+      model,
+      hardware,
+      dataCenter,
       customPue: formData.customPue,
       customCarbonIntensity: formData.customCarbonIntensity,
       contextWindow: formData.contextWindow
@@ -50,7 +71,7 @@ router.post('/calculate', (req, res) => {
     }
 
     // Calculate emissions
-    const result = sustainableAICalculator.calculateFromFormData(formData)
+    const result = sustainableAICalculator.calculateFromFormData(formData, model)
 
     const response: ApiResponse<CalculationResponse> = {
       success: true,
@@ -72,7 +93,7 @@ router.post('/calculate', (req, res) => {
 })
 
 // GET /api/calculation/validate
-router.post('/validate', (req, res) => {
+router.post('/validate', async (req, res) => {
   try {
     const { formData }: CalculationRequest = req.body
 
@@ -83,11 +104,30 @@ router.post('/validate', (req, res) => {
       } as ApiResponse<never>)
     }
 
+    // Fetch model from database
+    const model = await fetchModelFromDB(formData.model)
+    if (!model) {
+      return res.status(404).json({
+        success: false,
+        error: `Model '${formData.model}' not found`
+      } as ApiResponse<never>)
+    }
+
+    const hardware = getHardwareConfigById(formData.hardware)
+    const dataCenter = getDataCenterRegionById(formData.dataCenterProvider, formData.dataCenterRegion)
+
+    if (!hardware || !dataCenter) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid hardware or data center configuration'
+      } as ApiResponse<never>)
+    }
+
     const validation = sustainableAICalculator.validateParams({
       tokenCount: formData.tokenCount,
-      model: { id: formData.model, name: '', parameters: 0, contextLength: formData.contextLength, contextWindow: formData.contextWindow, complexityFactor: 1 },
-      hardware: { id: formData.hardware, name: '', powerConsumption: 0, tokensPerSecond: 0, efficiency: 0 },
-      dataCenter: { id: formData.dataCenterRegion, name: '', region: '', pue: 1, carbonIntensity: 0.415 },
+      model,
+      hardware,
+      dataCenter,
       customPue: formData.customPue,
       customCarbonIntensity: formData.customCarbonIntensity,
       contextWindow: formData.contextWindow

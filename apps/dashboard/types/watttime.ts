@@ -321,6 +321,7 @@ export interface Calculation {
   project_id: string
   token_count: number
   model: string
+  model_name?: string // Model name from ai_models table (fallback to model if not found)
   context_length?: number
   context_window?: number
   hardware?: string

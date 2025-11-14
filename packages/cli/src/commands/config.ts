@@ -1,6 +1,6 @@
 import { Command } from 'commander'
 import chalk from 'chalk'
-import { aiModels, hardwareConfigs, dataCenterProviders } from '@susai/config'
+import { hardwareConfigs, dataCenterProviders } from '@susai/config'
 
 export const configCommand = new Command('config')
   .description('Manage CLI configuration')

@@ -3,6 +3,7 @@ import { Pool } from 'pg'
 import { sustainableAICalculator } from '@susai/core'
 import { getPresetById } from '@susai/config'
 import type { TokenCalculatorFormData } from '@susai/types'
+import { fetchModelFromDB } from '../services/modelService'
 
 const router = Router()
 
@@ -430,8 +431,14 @@ router.post('/:id/recalculate', async (req, res) => {
         })
       }
 
+      // Fetch model from database
+      const model = await fetchModelFromDB(formData.model)
+      if (!model) {
+        throw new Error(`Model '${formData.model}' not found`)
+      }
+
       // Recalculate using the calculation engine
-      const newResults = sustainableAICalculator.calculateFromFormData(formData)
+      const newResults = sustainableAICalculator.calculateFromFormData(formData, model)
 
       // Debug logging for first calculation
       if (updatedCount === 0) {

@@ -1,77 +1,62 @@
 import type { AIModel } from '@susai/types'
+import { isBrowser } from './utils/browser'
 
-// Default token weights based on FLOP/token research
-// Used for models that support cache differentiation
-const defaultTokenWeights = {
-  inputWithCache: 1.25,
-  inputWithoutCache: 1.00,
-  cacheRead: 0.10,
-  outputTokens: 5.00
+/**
+ * Get model by ID - DEPRECATED: Use fetchAIModelById instead
+ * This function throws an error as hardcoded models have been removed
+ */
+export function getAIModelById(id: string): AIModel | undefined {
+  throw new Error('getAIModelById is deprecated. Models must be fetched from the API. Use fetchAIModelById in browser environments or query the database directly in server environments.')
 }
 
-// Predefined AI models
-export const aiModels: AIModel[] = [
-  {
-    id: 'gpt-4',
-    name: 'GPT-4',
-    parameters: 280,
-    contextLength: 8000,
-    contextWindow: 1250,
-    complexityFactor: 1.6 // 280B / 175B = 1.6x more complex than GPT-3
-  },
-  {
-    id: 'gpt-3.5-turbo',
-    name: 'GPT-3.5 Turbo',
-    parameters: 175,
-    contextLength: 4000,
-    contextWindow: 1000,
-    complexityFactor: 1.0 // Baseline (GPT-3 equivalent)
-  },
-  {
-    id: 'claude-3-opus',
-    name: 'Claude 3 Opus',
-    parameters: 200,
-    contextLength: 200000,
-    contextWindow: 2000,
-    complexityFactor: 1.14 // 200B / 175B = 1.14x more complex than GPT-3
-  },
-  {
-    id: 'claude-3-sonnet',
-    name: 'Claude 3 Sonnet',
-    parameters: 100,
-    contextLength: 200000,
-    contextWindow: 1500,
-    complexityFactor: 0.57 // 100B / 175B = 0.57x less complex than GPT-3
-  },
-  {
-    id: 'llama-2-70b',
-    name: 'Llama 2 70B',
-    parameters: 70,
-    contextLength: 4096,
-    contextWindow: 1000,
-    complexityFactor: 0.4 // 70B / 175B = 0.4x less complex than GPT-3
-  },
-  {
-    id: 'sonnet-4.5',
-    name: 'Sonnet 4.5',
-    parameters: 100,
-    contextLength: 200000,
-    contextWindow: 1500,
-    complexityFactor: 0.57, // Similar to Claude 3 Sonnet
-    tokenWeights: defaultTokenWeights
-  },
-  {
-    id: 'composer-1',
-    name: 'Composer 1',
-    parameters: 100,
-    contextLength: 200000,
-    contextWindow: 1500,
-    complexityFactor: 0.57, // Similar to Claude 3 Sonnet
-    tokenWeights: defaultTokenWeights
+// Fetch models from API (client-side only)
+export async function fetchAIModels(): Promise<AIModel[]> {
+  if (!isBrowser()) {
+    throw new Error('fetchAIModels can only be called in browser environment')
   }
-]
 
-export const getAIModelById = (id: string): AIModel | undefined => {
-  return aiModels.find(model => model.id === id)
+  const apiUrl = typeof (globalThis as any).process !== 'undefined' 
+    ? (globalThis as any).process.env?.NUXT_PUBLIC_API_URL || 'https://localhost:3001'
+    : 'https://localhost:3001'
+  
+  const response = await fetch(`${apiUrl}/api/models`)
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`)
+  }
+
+  const data = await response.json() as { success: boolean; data?: AIModel[] }
+  if (data.success && data.data) {
+    return data.data
+  }
+  
+  throw new Error('Invalid response format from models API')
+}
+
+// Fetch model by ID from API (client-side only)
+export async function fetchAIModelById(id: string): Promise<AIModel | undefined> {
+  if (!isBrowser()) {
+    throw new Error('fetchAIModelById can only be called in browser environment')
+  }
+
+  const apiUrl = typeof (globalThis as any).process !== 'undefined' 
+    ? (globalThis as any).process.env?.NUXT_PUBLIC_API_URL || 'https://localhost:3001'
+    : 'https://localhost:3001'
+  
+  const response = await fetch(`${apiUrl}/api/models/${id}`)
+  
+  if (!response.ok) {
+    if (response.status === 404) {
+      return undefined
+    }
+    throw new Error(`Failed to fetch model: ${response.status} ${response.statusText}`)
+  }
+
+  const data = await response.json() as { success: boolean; data?: AIModel }
+  if (data.success && data.data) {
+    return data.data
+  }
+  
+  throw new Error('Invalid response format from models API')
 }
 

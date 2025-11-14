@@ -2,7 +2,8 @@ import { Router } from 'express'
 import { Pool } from 'pg'
 import { sustainableAICalculator } from '@susai/core'
 import type { TokenCalculatorFormData } from '@susai/types'
-import { getPresetById, getAIModelById } from '@susai/config'
+import { getPresetById } from '@susai/config'
+import { fetchModelFromDB } from '../services/modelService'
 
 const router = Router()
 
@@ -96,12 +97,13 @@ router.get('/project/:projectId', async (req, res) => {
     const limitParamIndex = paramIndex
     const offsetParamIndex = paramIndex + 1
 
-    // Get calculations with tags
+    // Get calculations with tags and model names
     const queryString = `
       SELECT 
         c.id,
         c.token_count,
         c.model,
+        COALESCE(m.name, c.model) as model_name,
         c.context_length,
         c.context_window,
         c.hardware,
@@ -128,10 +130,15 @@ router.get('/project/:projectId', async (req, res) => {
           '[]'::json
         ) as tags
       FROM calculations c
+      LEFT JOIN ai_models m ON (
+        (c.model SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' AND c.model = m.id::text)
+        OR
+        (c.model NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' AND LOWER(c.model) = LOWER(m.name))
+      )
       LEFT JOIN calculation_tags ct ON c.id = ct.calculation_id
       LEFT JOIN tags t ON ct.tag_id = t.id
       WHERE ${whereClause}
-      GROUP BY c.id
+      GROUP BY c.id, m.name
       ORDER BY c.created_at DESC 
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `
@@ -251,6 +258,7 @@ router.get('/:id', async (req, res) => {
         c.id,
         c.token_count,
         c.model,
+        COALESCE(m.name, c.model) as model_name,
         c.context_length,
         c.context_window,
         c.hardware,
@@ -268,6 +276,11 @@ router.get('/:id', async (req, res) => {
         c.updated_at
       FROM calculations c
       JOIN projects p ON c.project_id = p.id
+      LEFT JOIN ai_models m ON (
+        (c.model SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' AND c.model = m.id::text)
+        OR
+        (c.model NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' AND LOWER(c.model) = LOWER(m.name))
+      )
       WHERE c.id = $1 AND p.user_id = $2
     `, [calculationIdInt, user_id])
 
@@ -666,8 +679,14 @@ router.post('/:id/recalculate', async (req, res) => {
       outputTokens: hasDetailedTokens ? (calc.output_tokens ?? 0) : undefined,
     }
 
+    // Fetch model from database
+    const model = await fetchModelFromDB(formData.model)
+    if (!model) {
+      throw new Error(`Model '${formData.model}' not found`)
+    }
+
     // Recalculate using the calculation engine
-    const newResults = sustainableAICalculator.calculateFromFormData(formData)
+    const newResults = sustainableAICalculator.calculateFromFormData(formData, model)
 
     // Update calculation_parameters to include weighted_tokens if detailed breakdown was used
     // totalTokenCount was already calculated above, reuse it
@@ -790,8 +809,14 @@ router.post('/bulk-recalculate', async (req, res) => {
         outputTokens: hasDetailedTokens ? (calc.output_tokens ?? 0) : undefined,
       }
 
+      // Fetch model from database
+      const model = await fetchModelFromDB(formData.model)
+      if (!model) {
+        throw new Error(`Model '${formData.model}' not found`)
+      }
+
       // Recalculate using the calculation engine
-      const newResults = sustainableAICalculator.calculateFromFormData(formData)
+      const newResults = sustainableAICalculator.calculateFromFormData(formData, model)
 
       // Update calculation_parameters to include weighted_tokens if detailed breakdown was used
       // totalTokenCount was already calculated above, reuse it

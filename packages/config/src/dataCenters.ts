@@ -41,8 +41,8 @@ export const dataCenterProviders: DataCenterProvider[] = [
     id: 'aws',
     name: 'Amazon Web Services',
     regions: [
-      { id: 'aws-us-east', name: 'US East (N. Virginia)', region: 'US-VA', pue: 1.15, carbonIntensity: 0.415 },
-      { id: 'aws-us-west', name: 'US West (Oregon)', region: 'US-OR', pue: 1.15, carbonIntensity: 0.200 },
+      { id: 'aws-us-east', name: 'US East (N. Virginia)', region: 'US-VA', pue: 1.15, carbonIntensity: 0.386 },
+      { id: 'aws-us-west', name: 'US West (Oregon)', region: 'US-OR', pue: 1.15, carbonIntensity: 0.386 },
       { id: 'aws-eu-west', name: 'Europe (Ireland)', region: 'IE', pue: 1.15, carbonIntensity: 0.285 },
       { id: 'aws-eu-central', name: 'Europe (Frankfurt)', region: 'DE', pue: 1.15, carbonIntensity: 0.285 },
       { id: 'aws-asia-pacific', name: 'Asia Pacific (Singapore)', region: 'SG', pue: 1.15, carbonIntensity: 0.459 },

@@ -101,7 +101,7 @@
                 </button>
               </div>
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                {{ calculation.model }} • {{ formatDate(calculation.created_at) }}
+                {{ calculation.model_name || calculation.model }} • {{ formatDate(calculation.created_at) }}
               </p>
               <div v-if="calculation.tags && calculation.tags.length > 0" class="flex flex-wrap gap-1">
                 <span

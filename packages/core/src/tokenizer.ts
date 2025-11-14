@@ -1,6 +1,5 @@
 import { encodingForModel } from 'js-tiktoken'
-import type { CostCalculationResult, Round, AgentResponse } from '@susai/types'
-import { getPricingForModel, calculateInputCost, calculateOutputCost } from '@susai/config'
+import type { CostCalculationResult, Round, AgentResponse, ModelPricing } from '@susai/types'
 
 /**
  * Supported models for tokenization
@@ -42,24 +41,27 @@ export function countTokens(text: string, model: TokenizerModel = 'gpt-4'): numb
  * Calculate cost for token usage based on model pricing
  * @param inputTokens - Number of input tokens
  * @param outputTokens - Number of output tokens
- * @param model - Model to calculate costs for ('gpt-3.5-turbo', 'gpt-4o', 'gpt-4.1', or 'gpt-5')
+ * @param pricing - Model pricing information
  * @param useCachedInput - Whether to use cached input pricing (default: false)
+ * @param modelName - Optional model name to include in result (default: 'custom')
  * @returns Cost calculation result
  */
 export function calculateCost(
   inputTokens: number,
   outputTokens: number,
-  model: 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4.1' | 'gpt-5' = 'gpt-4o',
-  useCachedInput: boolean = false
+  pricing: ModelPricing,
+  useCachedInput: boolean = false,
+  modelName: string = 'custom'
 ): CostCalculationResult {
-  const inputCost = calculateInputCost(inputTokens, model, useCachedInput)
-  const outputCost = calculateOutputCost(outputTokens, model)
+  const inputRate = useCachedInput ? (pricing.cachedInput ?? pricing.input) : pricing.input
+  const inputCost = (inputTokens / 1_000_000) * inputRate
+  const outputCost = (outputTokens / 1_000_000) * pricing.output
 
   return {
     inputCost,
     outputCost,
     totalCost: inputCost + outputCost,
-    model
+    model: modelName
   }
 }
 

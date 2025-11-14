@@ -134,6 +134,12 @@ export interface TokenWeights {
   outputTokens: number // multiplier for output tokens
 }
 
+export interface ModelPricing {
+  input: number // Price per 1M input tokens
+  cachedInput: number // Price per 1M cached input tokens
+  output: number // Price per 1M output tokens
+}
+
 export interface AIModel {
   id: string
   name: string
@@ -142,6 +148,8 @@ export interface AIModel {
   contextWindow: number
   complexityFactor: number // relative to GPT-3 (1.0 = GPT-3 baseline)
   tokenWeights?: TokenWeights // optional token weights for weighted token calculation
+  pricing?: ModelPricing // optional pricing information
+  isSystem?: boolean // whether this is a system model that cannot be deleted
 }
 
 export interface HardwareConfig {
@@ -340,7 +348,7 @@ export interface CostCalculationResult {
   inputCost: number
   outputCost: number
   totalCost: number
-  model: 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4.1' | 'gpt-5'
+  model: string
 }
 
 export interface CreateChatRequest {
@@ -377,4 +385,28 @@ export interface UpdateRoundRequest {
     agent_id: string
     response_text: string
   }[]
+}
+
+// Model Management API Types
+export interface CreateModelRequest {
+  name: string
+  parameters: number
+  contextLength: number
+  contextWindow: number
+  tokenWeights?: TokenWeights
+  pricing?: ModelPricing
+}
+
+export interface UpdateModelRequest {
+  name?: string
+  parameters?: number
+  contextLength?: number
+  contextWindow?: number
+  tokenWeights?: TokenWeights | null
+  pricing?: ModelPricing | null
+}
+
+export interface ModelResponse extends AIModel {
+  createdAt?: string
+  updatedAt?: string
 }

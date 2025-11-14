@@ -1,67 +1,67 @@
+import type { ModelPricing, AIModel } from '@susai/types'
+import { isBrowser } from './utils/browser'
+
 /**
- * GPT Model Pricing Configuration
- * Prices are per 1,000,000 tokens
+ * Fetch model pricing from API (extracts pricing from models with pricing data)
  */
-
-export interface ModelPricing {
-  model: string
-  input: number // Price per 1M input tokens
-  cachedInput: number // Price per 1M cached input tokens
-  output: number // Price per 1M output tokens
-}
-
-export const modelPricing: ModelPricing[] = [
-  {
-    model: 'gpt-3.5-turbo',
-    input: 0.50,
-    cachedInput: 0.00,
-    output: 1.50
-  },
-  {
-    model: 'gpt-4o',
-    input: 2.50,
-    cachedInput: 1.25,
-    output: 10.00
-  },
-  {
-    model: 'gpt-4.1',
-    input: 2.00,
-    cachedInput: 0.50,
-    output: 8.00
-  },
-  {
-    model: 'gpt-5',
-    input: 1.25,
-    cachedInput: 0.13,
-    output: 10.00
+export async function fetchModelPricing(): Promise<Array<{ model: string; input: number; cachedInput: number; output: number }>> {
+  if (!isBrowser()) {
+    throw new Error('fetchModelPricing can only be called in browser environment')
   }
-]
 
-/**
- * Get pricing for a specific model
- */
-export function getPricingForModel(model: string): ModelPricing | undefined {
-  return modelPricing.find(p => p.model === model)
-}
-
-/**
- * Calculate cost for input tokens
- */
-export function calculateInputCost(tokens: number, model: string, useCached: boolean = false): number {
-  const pricing = getPricingForModel(model)
-  if (!pricing) return 0
+  const apiUrl = typeof (globalThis as any).process !== 'undefined' 
+    ? (globalThis as any).process.env?.NUXT_PUBLIC_API_URL || 'https://localhost:3001'
+    : 'https://localhost:3001'
   
-  const rate = useCached ? pricing.cachedInput : pricing.input
-  return (tokens / 1_000_000) * rate
+  const response = await fetch(`${apiUrl}/api/models`)
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`)
+  }
+
+  const data = await response.json() as { success: boolean; data?: AIModel[] }
+  if (data.success && data.data) {
+    const models: AIModel[] = data.data
+    // Extract pricing from models that have it
+    return models
+      .filter(model => model.pricing)
+      .map(model => ({
+        model: model.name,
+        input: model.pricing!.input,
+        cachedInput: model.pricing!.cachedInput,
+        output: model.pricing!.output
+      }))
+  }
+  
+  throw new Error('Invalid response format from models API')
 }
 
 /**
- * Calculate cost for output tokens
+ * Get pricing for a specific model from API
  */
-export function calculateOutputCost(tokens: number, model: string): number {
-  const pricing = getPricingForModel(model)
-  if (!pricing) return 0
+export async function fetchPricingForModel(modelName: string): Promise<ModelPricing | undefined> {
+  if (!isBrowser()) {
+    throw new Error('fetchPricingForModel can only be called in browser environment')
+  }
+
+  const apiUrl = typeof (globalThis as any).process !== 'undefined' 
+    ? (globalThis as any).process.env?.NUXT_PUBLIC_API_URL || 'https://localhost:3001'
+    : 'https://localhost:3001'
   
-  return (tokens / 1_000_000) * pricing.output
+  const response = await fetch(`${apiUrl}/api/models`)
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`)
+  }
+
+  const data = await response.json() as { success: boolean; data?: AIModel[] }
+  if (data.success && data.data) {
+    const models: AIModel[] = data.data
+    const model = models.find(m => m.name === modelName || m.id === modelName)
+    return model?.pricing
+  }
+  
+  throw new Error('Invalid response format from models API')
 }
+
 
