@@ -21,8 +21,35 @@
           </div>
           
           <form @submit.prevent="calculate" class="space-y-4">
-            <!-- Token Count -->
+            <!-- Token Input Mode Toggle -->
             <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Token Input Mode *
+              </label>
+              <div class="flex gap-4">
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    v-model="useDetailedTokens"
+                    :value="false"
+                    class="mr-2"
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">Total Tokens</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    v-model="useDetailedTokens"
+                    :value="true"
+                    class="mr-2"
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300">Detailed Breakdown</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Token Count (Simple Mode) -->
+            <div v-if="!useDetailedTokens">
               <label for="tokenCount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Number of Tokens
               </label>
@@ -32,10 +59,84 @@
                 type="number"
                 min="1"
                 max="5000000000"
-                required
+                :required="!useDetailedTokens"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter number of tokens"
               />
+            </div>
+
+            <!-- Detailed Token Breakdown -->
+            <div v-if="useDetailedTokens" class="space-y-3">
+              <div>
+                <label for="inputWithCache" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Input (w/ Cache Write)
+                </label>
+                <input
+                  id="inputWithCache"
+                  v-model.number="formData.inputWithCache"
+                  type="number"
+                  min="0"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label for="inputWithoutCache" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Input (w/o Cache Write)
+                </label>
+                <input
+                  id="inputWithoutCache"
+                  v-model.number="formData.inputWithoutCache"
+                  type="number"
+                  min="0"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label for="cacheRead" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Cache Read
+                </label>
+                <input
+                  id="cacheRead"
+                  v-model.number="formData.cacheRead"
+                  type="number"
+                  min="0"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label for="outputTokens" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Output Tokens
+                </label>
+                <input
+                  id="outputTokens"
+                  v-model.number="formData.outputTokens"
+                  type="number"
+                  min="0"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                />
+              </div>
+              
+              <!-- Token Weights Display -->
+              <div v-if="selectedModelWeights" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Token Weights ({{ formData.model }})</p>
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                  <div>Input (w/ Cache): {{ selectedModelWeights.inputWithCache }}×</div>
+                  <div>Input (w/o Cache): {{ selectedModelWeights.inputWithoutCache }}×</div>
+                  <div>Cache Read: {{ selectedModelWeights.cacheRead }}×</div>
+                  <div>Output: {{ selectedModelWeights.outputTokens }}×</div>
+                </div>
+              </div>
+
+              <!-- Weighted Token Count Display -->
+              <div v-if="weightedTokenCount > 0" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Weighted Token Count: <span class="font-bold">{{ Math.round(weightedTokenCount) }}</span>
+                </p>
+              </div>
             </div>
 
             <!-- Model Selection -->
@@ -65,7 +166,7 @@
                 v-model.number="formData.contextLength"
                 type="number"
                 min="1000"
-                max="32000"
+                max="500000"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -308,7 +409,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick } from 'vue'
+import { nextTick, computed } from 'vue'
 import { Calculator } from 'lucide-vue-next'
 import type { TokenCalculatorFormData, CalculationResult, AIModel } from '~/types/watttime'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
@@ -329,12 +430,14 @@ const {
   getCarbonIntensityForRegion,
   calculateEmissions, 
   validateFormData,
-  formatNumber 
+  formatNumber,
+  calculateWeightedTokens
 } = useTokenCalculator()
 
 // Removed preset composable - now handled by PresetManager component
 
 // State
+const useDetailedTokens = ref(false)
 const formData = ref<TokenCalculatorFormData>({
   tokenCount: 1000,
   model: 'gpt-4',
@@ -342,7 +445,12 @@ const formData = ref<TokenCalculatorFormData>({
   contextWindow: 1250,
   hardware: 'nvidia-a100',
   dataCenterProvider: 'aws',
-  dataCenterRegion: 'aws-asia-pacific-tokyo'
+  dataCenterRegion: 'aws-asia-pacific-tokyo',
+  inputWithCache: 0,
+  inputWithoutCache: 0,
+  cacheRead: 0,
+  outputTokens: 0,
+  useDetailedTokens: false
 })
 
 const calculationResult = ref<CalculationResult | null>(null)
@@ -350,6 +458,25 @@ const isCalculating = ref(false)
 const isLoadingPreset = ref(false)
 const useCustomPue = ref(false)
 const useCustomCarbonIntensity = ref(false)
+
+// Computed: Get selected model's token weights
+const selectedModelWeights = computed(() => {
+  if (!formData.value.model) return null
+  const model = aiModels.find(m => m.id === formData.value.model)
+  return model?.tokenWeights || null
+})
+
+// Computed: Calculate weighted token count
+const weightedTokenCount = computed(() => {
+  if (!useDetailedTokens.value || !formData.value.model) return 0
+  return calculateWeightedTokens(
+    formData.value.inputWithCache || 0,
+    formData.value.inputWithoutCache || 0,
+    formData.value.cacheRead || 0,
+    formData.value.outputTokens || 0,
+    formData.value.model
+  )
+})
 
 // Computed properties for data center regions
 const availableRegions = computed(() => {
@@ -369,15 +496,22 @@ const calculate = async () => {
   isCalculating.value = true
   
   try {
+    // Prepare form data for validation and calculation
+    const formDataForValidation: any = {
+      ...formData.value,
+      tokenCount: useDetailedTokens.value ? weightedTokenCount.value : formData.value.tokenCount,
+      useDetailedTokens: useDetailedTokens.value
+    }
+
     // Validate form data
-    const validation = validateFormData(formData.value)
+    const validation = validateFormData(formDataForValidation)
     if (!validation.isValid) {
       alert('Please fix the following errors:\n' + validation.errors.join('\n'))
       return
     }
 
     // Calculate emissions
-    const result = calculateEmissions(formData.value)
+    const result = calculateEmissions(formDataForValidation)
     console.log(result);
     calculationResult.value = result
   } catch (error) {
@@ -490,8 +624,12 @@ watch(() => formData.value.dataCenterProvider, () => {
 })
 
 // Auto-calculate when form data changes
-watch(formData, () => {
-  if (formData.value.tokenCount > 0 && !isCalculating.value && !isLoadingPreset.value) {
+watch([formData, useDetailedTokens], () => {
+  const hasValidInput = useDetailedTokens.value 
+    ? (weightedTokenCount.value > 0)
+    : (formData.value.tokenCount > 0)
+  
+  if (hasValidInput && !isCalculating.value && !isLoadingPreset.value) {
     calculate()
   }
 }, { deep: true })

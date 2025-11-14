@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { Pool } from 'pg'
 import { sustainableAICalculator } from '@susai/core'
 import { getPresetById } from '@susai/config'
+import type { TokenCalculatorFormData } from '@susai/types'
 
 const router = Router()
 

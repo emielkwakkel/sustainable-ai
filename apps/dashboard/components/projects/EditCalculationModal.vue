@@ -15,7 +15,35 @@
       </div>
 
       <div v-if="calculation" class="space-y-4">
+        <!-- Token Input Mode -->
         <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Token Input Mode
+          </label>
+          <div class="flex gap-4">
+            <label class="flex items-center">
+              <input
+                type="radio"
+                v-model="useDetailedTokens"
+                :value="false"
+                class="mr-2"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-300">Total Tokens</span>
+            </label>
+            <label class="flex items-center">
+              <input
+                type="radio"
+                v-model="useDetailedTokens"
+                :value="true"
+                class="mr-2"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-300">Detailed Breakdown</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Token Count (Simple Mode) -->
+        <div v-if="!useDetailedTokens">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Token Count
           </label>
@@ -25,6 +53,87 @@
             min="1"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
+        </div>
+
+        <!-- Detailed Token Breakdown -->
+        <div v-if="useDetailedTokens" class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Input (w/ Cache Write)
+            </label>
+            <input
+              v-model.number="formData.input_with_cache"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Input (w/o Cache Write)
+            </label>
+            <input
+              v-model.number="formData.input_without_cache"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Cache Read
+            </label>
+            <input
+              v-model.number="formData.cache_read"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Output Tokens
+            </label>
+            <input
+              v-model.number="formData.output_tokens"
+              type="number"
+              min="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder="0"
+            />
+          </div>
+          
+          <!-- Total Token Count (Read-only, calculated) -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Total Token Count (sum)
+            </label>
+            <input
+              :value="totalTokenCount"
+              type="number"
+              readonly
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            />
+          </div>
+          
+          <!-- Weighted Token Count (Read-only, calculated) -->
+          <div v-if="weightedTokenCount > 0">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Weighted Token Count (for calculation)
+            </label>
+            <input
+              :value="Math.round(weightedTokenCount)"
+              type="number"
+              readonly
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 cursor-not-allowed"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              This value will be used for emissions calculation
+            </p>
+          </div>
         </div>
 
         <div>
@@ -104,6 +213,7 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import type { Calculation } from '~/types/watttime'
 import { usePresets } from '~/composables/usePresets'
+import { useTokenCalculator } from '~/composables/useTokenCalculator'
 
 interface Props {
   calculation: Calculation | null
@@ -120,6 +230,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { presets } = usePresets()
+const { calculateWeightedTokens } = useTokenCalculator()
 
 const getAllPresets = () => presets.value
 const getPresetById = (id: string) => presets.value.find(p => p.id === id)
@@ -134,11 +245,49 @@ const formData = ref({
   hardware: '',
   data_center_provider: '',
   data_center_region: '',
+  input_with_cache: 0,
+  input_without_cache: 0,
+  cache_read: 0,
+  output_tokens: 0,
 })
 
 const selectedPresetId = ref<string>('project-default')
 const saving = ref(false)
 const project = ref<any>(null)
+// Default to detailed breakdown mode to show all fields
+const useDetailedTokens = ref(true)
+
+// Check if calculation has detailed token breakdown (at least one field > 0)
+const hasDetailedTokens = computed(() => {
+  if (!props.calculation) return false
+  return (
+    (props.calculation.input_with_cache !== null && props.calculation.input_with_cache !== undefined && props.calculation.input_with_cache > 0) ||
+    (props.calculation.input_without_cache !== null && props.calculation.input_without_cache !== undefined && props.calculation.input_without_cache > 0) ||
+    (props.calculation.cache_read !== null && props.calculation.cache_read !== undefined && props.calculation.cache_read > 0) ||
+    (props.calculation.output_tokens !== null && props.calculation.output_tokens !== undefined && props.calculation.output_tokens > 0)
+  )
+})
+
+// Calculate total token count (sum of four fields)
+const totalTokenCount = computed(() => {
+  if (!useDetailedTokens.value) return formData.value.token_count
+  return (formData.value.input_with_cache || 0) +
+         (formData.value.input_without_cache || 0) +
+         (formData.value.cache_read || 0) +
+         (formData.value.output_tokens || 0)
+})
+
+// Calculate weighted token count
+const weightedTokenCount = computed(() => {
+  if (!useDetailedTokens.value || !formData.value.model) return 0
+  return calculateWeightedTokens(
+    formData.value.input_with_cache || 0,
+    formData.value.input_without_cache || 0,
+    formData.value.cache_read || 0,
+    formData.value.output_tokens || 0,
+    formData.value.model
+  )
+})
 
 const selectedPreset = computed(() => {
   if (selectedPresetId.value === 'project-default') {
@@ -245,6 +394,27 @@ const findPresetForCalculation = (calc: Calculation): string => {
 
 watch(() => props.calculation, (newCalc) => {
   if (newCalc) {
+    // Debug: Check what we're receiving
+    console.log('EditCalculationModal - Received calculation:', {
+      id: newCalc.id,
+      input_with_cache: newCalc.input_with_cache,
+      input_without_cache: newCalc.input_without_cache,
+      cache_read: newCalc.cache_read,
+      output_tokens: newCalc.output_tokens,
+      hasInputWithCache: 'input_with_cache' in newCalc,
+      hasInputWithoutCache: 'input_without_cache' in newCalc,
+      hasCacheRead: 'cache_read' in newCalc,
+      hasOutputTokens: 'output_tokens' in newCalc,
+    })
+    
+    // Always show detailed breakdown mode by default
+    // Load all data from database, using 0 as default for null/undefined values
+    // Handle both null and undefined explicitly
+    const inputWithCache = (newCalc.input_with_cache != null) ? newCalc.input_with_cache : 0
+    const inputWithoutCache = (newCalc.input_without_cache != null) ? newCalc.input_without_cache : 0
+    const cacheRead = (newCalc.cache_read != null) ? newCalc.cache_read : 0
+    const outputTokens = (newCalc.output_tokens != null) ? newCalc.output_tokens : 0
+    
     formData.value = {
       token_count: newCalc.token_count,
       model: newCalc.model,
@@ -253,7 +423,17 @@ watch(() => props.calculation, (newCalc) => {
       hardware: newCalc.hardware || '',
       data_center_provider: newCalc.data_center_provider || '',
       data_center_region: newCalc.data_center_region || '',
+      // Load detailed token fields from database
+      input_with_cache: inputWithCache,
+      input_without_cache: inputWithoutCache,
+      cache_read: cacheRead,
+      output_tokens: outputTokens,
     }
+    
+    console.log('EditCalculationModal - Form data set to:', formData.value)
+    
+    // Keep detailed mode enabled (already defaults to true)
+    // This ensures users can always see and edit the detailed breakdown
     
     // Set preset based on calculation or project default
     if (project.value?.calculation_preset_id || props.projectPresetId) {
@@ -314,14 +494,36 @@ const saveCalculation = async () => {
     // If a preset is selected, use those values
     // If values are manually entered, use those (they're already in formData)
     
+    // Calculate token_count based on mode
+    // token_count should always be the sum of the four fields, not weighted tokens
+    let finalTokenCount = formData.value.token_count
+    if (useDetailedTokens.value) {
+      // Use sum of four fields for token_count
+      finalTokenCount = totalTokenCount.value
+    }
+    
     // Prepare update payload
     const updatePayload: any = {
-      token_count: formData.value.token_count,
+      token_count: finalTokenCount,
       model: formData.value.model,
       hardware: formData.value.hardware,
       data_center_provider: formData.value.data_center_provider,
       data_center_region: formData.value.data_center_region,
       user_id: 'default-user',
+    }
+    
+    // Include detailed token fields if using detailed mode
+    if (useDetailedTokens.value) {
+      updatePayload.cache_read = formData.value.cache_read ?? null
+      updatePayload.output_tokens = formData.value.output_tokens ?? null
+      updatePayload.input_with_cache = formData.value.input_with_cache ?? null
+      updatePayload.input_without_cache = formData.value.input_without_cache ?? null
+    } else {
+      // Clear detailed fields when switching to simple mode
+      updatePayload.cache_read = null
+      updatePayload.output_tokens = null
+      updatePayload.input_with_cache = null
+      updatePayload.input_without_cache = null
     }
     
     // Only include context_length and context_window if they're explicitly set (not null)

@@ -65,9 +65,33 @@
             </div>
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
-                <p class="font-medium text-gray-900 dark:text-white">
-                  {{ calculation.token_count.toLocaleString() }} tokens
-                </p>
+                <div class="relative group">
+                  <p class="font-medium text-gray-900 dark:text-white cursor-help">
+                    {{ calculation.token_count.toLocaleString() }} tokens
+                  </p>
+                  <!-- Token Breakdown Popover -->
+                  <div v-if="hasTokenBreakdown(calculation)" class="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                    <div class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Token Breakdown</div>
+                    <div class="space-y-1 text-xs">
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Input (w/ Cache):</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ (calculation.input_with_cache || 0).toLocaleString() }}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Input (w/o Cache):</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ (calculation.input_without_cache || 0).toLocaleString() }}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Cache Read:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ (calculation.cache_read || 0).toLocaleString() }}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Output Tokens:</span>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ (calculation.output_tokens || 0).toLocaleString() }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <button
                   @click="handleEdit(calculation)"
                   class="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
@@ -413,8 +437,25 @@ const handleBulkDelete = async () => {
   }
 }
 
-const handleEdit = (calculation: Calculation) => {
-  editingCalculation.value = calculation
+const handleEdit = async (calculation: Calculation) => {
+  // Fetch the calculation fresh from the API to ensure we have the latest data
+  try {
+    const apiBaseUrl = process.env.NODE_ENV === 'development' ? 'https://localhost:3001' : window.location.origin
+    const response = await fetch(`${apiBaseUrl}/api/calculations/${calculation.id}?user_id=default-user`)
+    const data = await response.json()
+    
+    if (data.success && data.data) {
+      // Use the fresh calculation data from the API
+      editingCalculation.value = data.data
+    } else {
+      // Fallback to the calculation from the list if API call fails
+      editingCalculation.value = calculation
+    }
+  } catch (error) {
+    console.error('Error fetching calculation for edit:', error)
+    // Fallback to the calculation from the list if API call fails
+    editingCalculation.value = calculation
+  }
 }
 
 const handleCalculationUpdated = () => {
@@ -438,5 +479,14 @@ const handlePageSizeChange = (event: Event) => {
   const target = event.target as HTMLSelectElement
   const newSize = parseInt(target.value, 10)
   emit('page-size-change', newSize)
+}
+
+const hasTokenBreakdown = (calculation: Calculation): boolean => {
+  return (
+    (calculation.input_with_cache !== undefined && calculation.input_with_cache !== null) ||
+    (calculation.input_without_cache !== undefined && calculation.input_without_cache !== null) ||
+    (calculation.cache_read !== undefined && calculation.cache_read !== null) ||
+    (calculation.output_tokens !== undefined && calculation.output_tokens !== null)
+  )
 }
 </script>

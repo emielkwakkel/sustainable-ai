@@ -3,7 +3,8 @@ import type {
   CalculationResult, 
   CalculationEngine,
   FormValidationResult,
-  TokenCalculatorFormData
+  TokenCalculatorFormData,
+  TokenWeights
 } from '@susai/types'
 import { 
   getAIModelById, 
@@ -13,10 +14,76 @@ import {
 
 export class SustainableAICalculator implements CalculationEngine {
   /**
+   * Calculate weighted tokens from detailed token breakdown
+   * Formula: weighted_tokens = 1.25 * inputWithCache + 1.00 * inputWithoutCache + 0.10 * cacheRead + 5.00 * outputTokens
+   */
+  calculateWeightedTokens(
+    inputWithCache: number,
+    inputWithoutCache: number,
+    cacheRead: number,
+    outputTokens: number,
+    tokenWeights?: TokenWeights
+  ): number {
+    // Use provided weights or default weights
+    const weights = tokenWeights || {
+      inputWithCache: 1.25,
+      inputWithoutCache: 1.00,
+      cacheRead: 0.10,
+      outputTokens: 5.00
+    }
+
+    return (
+      weights.inputWithCache * (inputWithCache || 0) +
+      weights.inputWithoutCache * (inputWithoutCache || 0) +
+      weights.cacheRead * (cacheRead || 0) +
+      weights.outputTokens * (outputTokens || 0)
+    )
+  }
+
+  /**
    * Calculate energy consumption and carbon emissions for AI model token usage
    */
   calculateEmissions(params: CalculationParams): CalculationResult {
-    const { tokenCount, model, hardware, dataCenter, customPue, customCarbonIntensity } = params
+    const { 
+      tokenCount, 
+      model, 
+      hardware, 
+      dataCenter, 
+      customPue, 
+      customCarbonIntensity,
+      inputWithCache,
+      inputWithoutCache,
+      cacheRead,
+      outputTokens,
+      tokenWeights
+    } = params
+
+    // Calculate effective token count
+    // If detailed token breakdown is provided, use weighted tokens
+    // Otherwise, use the provided tokenCount
+    let effectiveTokenCount = tokenCount
+    
+    // Check if we should use detailed token breakdown
+    // Either useDetailedTokens flag is set, or at least one detailed field is provided
+    const shouldUseDetailedTokens = (
+      (params as any).useDetailedTokens === true ||
+      inputWithCache !== undefined ||
+      inputWithoutCache !== undefined ||
+      cacheRead !== undefined ||
+      outputTokens !== undefined
+    )
+    
+    if (shouldUseDetailedTokens) {
+      // Use model's token weights if available, otherwise use provided override or defaults
+      const weights = tokenWeights || model.tokenWeights
+      effectiveTokenCount = this.calculateWeightedTokens(
+        inputWithCache || 0,
+        inputWithoutCache || 0,
+        cacheRead || 0,
+        outputTokens || 0,
+        weights
+      )
+    }
 
     // Use custom values if provided, otherwise use data center defaults
     const pue = customPue ?? dataCenter.pue
@@ -42,8 +109,8 @@ export class SustainableAICalculator implements CalculationEngine {
     const adjustedEnergyPerTokenKwh = contextAdjustedEnergyKwh * pue
     const adjustedEnergyPerToken = adjustedEnergyPerTokenKwh * 3600000 // Convert kWh to joules
     
-    // Calculate total energy
-    const energyJoules = adjustedEnergyPerToken * tokenCount
+    // Calculate total energy using effective token count
+    const energyJoules = adjustedEnergyPerToken * effectiveTokenCount
     const energyKWh = energyJoules / 3600000 // Convert joules to kWh
     
     // Calculate carbon emissions per token
@@ -51,14 +118,14 @@ export class SustainableAICalculator implements CalculationEngine {
     const energyPerTokenKWh = adjustedEnergyPerToken / 3600000 // Convert joules to kWh
     const carbonEmissionsPerTokenKg = energyPerTokenKWh * carbonIntensity // kg CO₂ per token
     const carbonEmissionsPerTokenGrams = carbonEmissionsPerTokenKg * 1000 // Convert kg to grams
-    const totalEmissionsGrams = carbonEmissionsPerTokenGrams * tokenCount
+    const totalEmissionsGrams = carbonEmissionsPerTokenGrams * effectiveTokenCount
     
-    // Calculate equivalent metrics
-    const equivalentLightbulbMinutes = (energyKWh * tokenCount) / 0.01 // 10W lightbulb
+    // Calculate equivalent metrics using effective token count
+    const equivalentLightbulbMinutes = (energyKWh * effectiveTokenCount) / 0.01 // 10W lightbulb
     const equivalentCarMiles = (totalEmissionsGrams / 1000) * 2.3 // kg CO₂ per mile
     const equivalentTreeHours = totalEmissionsGrams / 0.022 // grams CO₂ absorbed per hour by a tree
 
-    return {
+    const result: CalculationResult = {
       energyJoules,
       energyKWh,
       carbonEmissionsGrams: carbonEmissionsPerTokenGrams,
@@ -67,6 +134,13 @@ export class SustainableAICalculator implements CalculationEngine {
       equivalentCarMiles,
       equivalentTreeHours
     }
+    
+    // Include weighted tokens in result if detailed breakdown was used
+    if (shouldUseDetailedTokens) {
+      result.weightedTokens = effectiveTokenCount
+    }
+    
+    return result
   }
 
   /**
@@ -84,8 +158,8 @@ export class SustainableAICalculator implements CalculationEngine {
     // For now, we'll validate that the context length is reasonable
     // TODO: This validation should be moved to the form validation layer
     // where we can access the form data's context length
-    if (params.model.contextLength < 1000 || params.model.contextLength > 32000) {
-      errors.push('Context length must be between 1,000 and 32,000 tokens')
+    if (params.model.contextLength < 1000 || params.model.contextLength > 500000) {
+      errors.push('Context length must be between 1,000 and 500,000 tokens')
     }
 
     if (params.contextWindow < 100 || params.contextWindow > 2000) {
@@ -125,7 +199,13 @@ export class SustainableAICalculator implements CalculationEngine {
       dataCenter,
       customPue: formData.customPue,
       customCarbonIntensity: formData.customCarbonIntensity,
-      contextWindow: formData.contextWindow
+      contextWindow: formData.contextWindow,
+      // Include detailed token breakdown if provided
+      inputWithCache: formData.inputWithCache,
+      inputWithoutCache: formData.inputWithoutCache,
+      cacheRead: formData.cacheRead,
+      outputTokens: formData.outputTokens,
+      tokenWeights: formData.tokenWeights
     }
 
     return this.calculateEmissions(params)

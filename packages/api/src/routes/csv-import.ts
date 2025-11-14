@@ -124,6 +124,12 @@ async function convertCSVRowToCalculation(
   // Call calculation API
   const calculationResult = sustainableAICalculator.calculateFromFormData(formData)
 
+  // Extract detailed token breakdown from CSV row
+  const inputWithCache = parseInt(row['Input (w/ Cache Write)'] || '0')
+  const inputWithoutCache = parseInt(row['Input (w/o Cache Write)'] || '0')
+  const cacheRead = parseInt(row['Cache Read'] || '0')
+  const outputTokens = parseInt(row['Output Tokens'] || '0')
+
   return {
     project_id: projectId,
     token_count: totalTokens,
@@ -135,15 +141,19 @@ async function convertCSVRowToCalculation(
     data_center_region: formData.dataCenterRegion,
     custom_pue: formData.customPue || null,
     custom_carbon_intensity: formData.customCarbonIntensity || null,
+    cache_read: cacheRead || null,
+    output_tokens: outputTokens || null,
+    input_with_cache: inputWithCache || null,
+    input_without_cache: inputWithoutCache || null,
     calculation_parameters: {
       date: row.Date,
       kind: row.Kind,
       model: row.Model,
       maxMode: row['Max Mode'],
-      inputWithCache: parseInt(row['Input (w/ Cache Write)'] || '0'),
-      inputWithoutCache: parseInt(row['Input (w/o Cache Write)'] || '0'),
-      cacheRead: parseInt(row['Cache Read'] || '0'),
-      outputTokens: parseInt(row['Output Tokens'] || '0'),
+      inputWithCache: inputWithCache,
+      inputWithoutCache: inputWithoutCache,
+      cacheRead: cacheRead,
+      outputTokens: outputTokens,
       totalTokens: totalTokens,
       cost: parseFloat(row.Cost || '0'),
     },
@@ -158,10 +168,12 @@ function mapCSVModelToOurModel(csvModel: string): string {
     'gpt-3.5-turbo': 'gpt-3.5-turbo',
     'claude-3-opus': 'claude-3-opus',
     'claude-3-sonnet': 'claude-3-sonnet',
-    'auto': 'gpt-4',
+    'sonnet-4.5': 'sonnet-4.5',
+    'composer-1': 'composer-1',
+    'auto': 'sonnet-4.5', // Updated default mapping for auto model
   }
 
-  return modelMapping[csvModel.toLowerCase()] || 'gpt-4'
+  return modelMapping[csvModel.toLowerCase()] || 'sonnet-4.5'
 }
 
 // Health check for CSV import route
@@ -270,9 +282,10 @@ router.post('/import', async (req, res) => {
             INSERT INTO calculations (
               project_id, token_count, model, context_length, context_window,
               hardware, data_center_provider, data_center_region, custom_pue,
-              custom_carbon_intensity, calculation_parameters, results, created_at
+              custom_carbon_intensity, calculation_parameters, cache_read,
+              output_tokens, input_with_cache, input_without_cache, results, created_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
             RETURNING id, created_at
           `, [
             calculation.project_id,
@@ -286,6 +299,10 @@ router.post('/import', async (req, res) => {
             calculation.custom_pue,
             calculation.custom_carbon_intensity,
             JSON.stringify(calculation.calculation_parameters),
+            calculation.cache_read ?? null,
+            calculation.output_tokens ?? null,
+            calculation.input_with_cache ?? null,
+            calculation.input_without_cache ?? null,
             JSON.stringify(calculation.results),
             createdAt, // Pass Date object directly
           ])

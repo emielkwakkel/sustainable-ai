@@ -1,5 +1,5 @@
 <template>
-  <div v-if="analytics" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div v-if="analytics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-6">
       <div class="flex items-center justify-between">
         <div>
@@ -44,6 +44,32 @@
         <Calculator class="w-8 h-8 text-green-600" />
       </div>
     </div>
+
+    <!-- Token Breakdown Card -->
+    <div v-if="hasTokenBreakdown" class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-medium text-purple-700 dark:text-purple-300">Token Breakdown</p>
+        <Calculator class="w-6 h-6 text-purple-600" />
+      </div>
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <p class="text-purple-600 dark:text-purple-400">Input (w/ Cache)</p>
+          <p class="text-lg font-bold text-purple-900 dark:text-purple-200">{{ formatNumber(totalInputWithCache) }}</p>
+        </div>
+        <div>
+          <p class="text-purple-600 dark:text-purple-400">Input (w/o Cache)</p>
+          <p class="text-lg font-bold text-purple-900 dark:text-purple-200">{{ formatNumber(totalInputWithoutCache) }}</p>
+        </div>
+        <div>
+          <p class="text-purple-600 dark:text-purple-400">Cache Read</p>
+          <p class="text-lg font-bold text-purple-900 dark:text-purple-200">{{ formatNumber(totalCacheRead) }}</p>
+        </div>
+        <div>
+          <p class="text-purple-600 dark:text-purple-400">Output Tokens</p>
+          <p class="text-lg font-bold text-purple-900 dark:text-purple-200">{{ formatNumber(totalOutputTokens) }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -71,6 +97,36 @@ const totalTokens = computed(() => {
 const averageTokensPerTransaction = computed(() => {
   if (!props.calculations || props.calculations.length === 0) return 0
   return Math.round(totalTokens.value / props.calculations.length)
+})
+
+const totalInputWithCache = computed(() => {
+  if (!props.calculations || props.calculations.length === 0) return 0
+  return props.calculations.reduce((sum, calc) => sum + (calc.input_with_cache || 0), 0)
+})
+
+const totalInputWithoutCache = computed(() => {
+  if (!props.calculations || props.calculations.length === 0) return 0
+  return props.calculations.reduce((sum, calc) => sum + (calc.input_without_cache || 0), 0)
+})
+
+const totalCacheRead = computed(() => {
+  if (!props.calculations || props.calculations.length === 0) return 0
+  return props.calculations.reduce((sum, calc) => sum + (calc.cache_read || 0), 0)
+})
+
+const totalOutputTokens = computed(() => {
+  if (!props.calculations || props.calculations.length === 0) return 0
+  return props.calculations.reduce((sum, calc) => sum + (calc.output_tokens || 0), 0)
+})
+
+const hasTokenBreakdown = computed(() => {
+  if (!props.calculations || props.calculations.length === 0) return false
+  return props.calculations.some(calc => 
+    (calc.input_with_cache !== undefined && calc.input_with_cache !== null) ||
+    (calc.input_without_cache !== undefined && calc.input_without_cache !== null) ||
+    (calc.cache_read !== undefined && calc.cache_read !== null) ||
+    (calc.output_tokens !== undefined && calc.output_tokens !== null)
+  )
 })
 
 const filteredEnergyJoules = computed(() => {

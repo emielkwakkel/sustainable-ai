@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { useTokenCalculator } from '~/composables/useTokenCalculator'
 
 describe('useTokenCalculator', () => {
-  const { calculateEmissions, validateFormData, formatNumber } = useTokenCalculator()
+  const { calculateEmissions, validateFormData, formatNumber, calculateWeightedTokens } = useTokenCalculator()
 
   it('calculates emissions correctly for default GPT-4 configuration', () => {
     const formData = {
@@ -161,5 +161,149 @@ describe('useTokenCalculator', () => {
     const expectedEnergyPerTokenKwh = (0.3 / 800) * 1.0 * 1.0 * 1.1
     const expectedEnergyJoules = expectedEnergyPerTokenKwh * 3600000 * 1000
     expect(result.energyJoules).toBeCloseTo(expectedEnergyJoules, 0)
+  })
+
+  describe('weighted token calculation', () => {
+    it('calculates weighted tokens correctly with default weights', () => {
+      const weightedTokens = calculateWeightedTokens(
+        100, // inputWithCache
+        200, // inputWithoutCache
+        500, // cacheRead
+        50   // outputTokens
+      )
+
+      // Expected: 1.25 * 100 + 1.00 * 200 + 0.10 * 500 + 5.00 * 50
+      // = 125 + 200 + 50 + 250 = 625
+      expect(weightedTokens).toBe(625)
+    })
+
+    it('calculates weighted tokens correctly with model-specific weights', () => {
+      const weightedTokens = calculateWeightedTokens(
+        100, // inputWithCache
+        200, // inputWithoutCache
+        500, // cacheRead
+        50,  // outputTokens
+        'composer-1' // model with token weights
+      )
+
+      // Composer-1 uses default weights: 1.25, 1.00, 0.10, 5.00
+      // Expected: 1.25 * 100 + 1.00 * 200 + 0.10 * 500 + 5.00 * 50 = 625
+      expect(weightedTokens).toBe(625)
+    })
+
+    it('calculates weighted tokens correctly with custom weights', () => {
+      const customWeights = {
+        inputWithCache: 2.0,
+        inputWithoutCache: 1.5,
+        cacheRead: 0.2,
+        outputTokens: 6.0
+      }
+
+      const weightedTokens = calculateWeightedTokens(
+        100, // inputWithCache
+        200, // inputWithoutCache
+        500, // cacheRead
+        50,  // outputTokens
+        undefined, // no model
+        customWeights
+      )
+
+      // Expected: 2.0 * 100 + 1.5 * 200 + 0.2 * 500 + 6.0 * 50
+      // = 200 + 300 + 100 + 300 = 900
+      expect(weightedTokens).toBe(900)
+    })
+
+    it('handles zero values correctly', () => {
+      const weightedTokens = calculateWeightedTokens(0, 0, 0, 0)
+      expect(weightedTokens).toBe(0)
+    })
+  })
+
+  describe('detailed token mode validation', () => {
+    it('validates detailed token fields correctly', () => {
+      const formData = {
+        tokenCount: 0, // Not used in detailed mode
+        model: 'composer-1',
+        contextLength: 8000,
+        contextWindow: 1250,
+        hardware: 'nvidia-a100',
+        dataCenterProvider: 'google-cloud',
+        dataCenterRegion: 'google-oregon',
+        useDetailedTokens: true,
+        inputWithCache: 100,
+        inputWithoutCache: 200,
+        cacheRead: 500,
+        outputTokens: 50
+      }
+
+      const validation = validateFormData(formData)
+      expect(validation.isValid).toBe(true)
+      expect(validation.errors).toHaveLength(0)
+    })
+
+    it('rejects negative detailed token values', () => {
+      const formData = {
+        tokenCount: 0,
+        model: 'composer-1',
+        contextLength: 8000,
+        contextWindow: 1250,
+        hardware: 'nvidia-a100',
+        dataCenterProvider: 'google-cloud',
+        dataCenterRegion: 'google-oregon',
+        useDetailedTokens: true,
+        inputWithCache: -10, // Invalid
+        inputWithoutCache: 200,
+        cacheRead: 500,
+        outputTokens: 50
+      }
+
+      const validation = validateFormData(formData)
+      expect(validation.isValid).toBe(false)
+      expect(validation.errors).toContain('Input (w/ Cache Write) must be non-negative')
+    })
+
+    it('requires at least one detailed token field to have a value', () => {
+      const formData = {
+        tokenCount: 0,
+        model: 'composer-1',
+        contextLength: 8000,
+        contextWindow: 1250,
+        hardware: 'nvidia-a100',
+        dataCenterProvider: 'google-cloud',
+        dataCenterRegion: 'google-oregon',
+        useDetailedTokens: true,
+        inputWithCache: 0,
+        inputWithoutCache: 0,
+        cacheRead: 0,
+        outputTokens: 0
+      }
+
+      const validation = validateFormData(formData)
+      expect(validation.isValid).toBe(false)
+      expect(validation.errors).toContain('At least one detailed token field must have a value')
+    })
+
+    it('calculates emissions correctly with detailed token breakdown', () => {
+      const formData = {
+        tokenCount: 0, // Will be replaced by weighted tokens
+        model: 'composer-1',
+        contextLength: 8000,
+        contextWindow: 1250,
+        hardware: 'nvidia-a100',
+        dataCenterProvider: 'google-cloud',
+        dataCenterRegion: 'google-oregon',
+        useDetailedTokens: true,
+        inputWithCache: 100,
+        inputWithoutCache: 200,
+        cacheRead: 500,
+        outputTokens: 50
+      }
+
+      const result = calculateEmissions(formData)
+
+      // Should calculate using weighted tokens (625) instead of tokenCount
+      expect(result.energyJoules).toBeGreaterThan(0)
+      expect(result.totalEmissionsGrams).toBeGreaterThan(0)
+    })
   })
 })

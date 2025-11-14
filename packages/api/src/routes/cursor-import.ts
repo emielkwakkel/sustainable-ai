@@ -135,14 +135,16 @@ router.post('/import', async (req, res) => {
           INSERT INTO calculations (
             project_id, token_count, model, context_length, context_window,
             hardware, data_center_provider, data_center_region, custom_pue,
-            custom_carbon_intensity, calculation_parameters, results
+            custom_carbon_intensity, calculation_parameters, cache_read,
+            output_tokens, input_with_cache, input_without_cache, results
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
           RETURNING id
         `, [
           calc.project_id, calc.token_count, calc.model, calc.context_length, calc.context_window,
           calc.hardware, calc.data_center_provider, calc.data_center_region, calc.custom_pue,
-          calc.custom_carbon_intensity, calc.calculation_parameters, calc.results
+          calc.custom_carbon_intensity, calc.calculation_parameters, calc.cache_read ?? null,
+          calc.output_tokens ?? null, calc.input_with_cache ?? null, calc.input_without_cache ?? null, calc.results
         ])
 
         insertedCalculations.push(result.rows[0].id)
@@ -264,6 +266,12 @@ async function convertUsageDataToCalculations(usageData: any[], projectId: strin
       // Calculate emissions using the preset configuration
       const calculationResult = sustainableAICalculator.calculateFromFormData(formData)
 
+      // Extract detailed token breakdown from Cursor API record
+      const cacheRead = record.cacheRead || record.cache_read || 0
+      const outputTokens = record.outputTokens || record.output_tokens || 0
+      const inputWithCache = record.inputWithCache || record.input_with_cache || 0
+      const inputWithoutCache = record.inputWithoutCache || record.input_without_cache || 0
+
       const calculation = {
         project_id: projectId,
         token_count: formData.tokenCount,
@@ -275,10 +283,16 @@ async function convertUsageDataToCalculations(usageData: any[], projectId: strin
         data_center_region: formData.dataCenterRegion,
         custom_pue: formData.customPue || null,
         custom_carbon_intensity: formData.customCarbonIntensity || null,
+        cache_read: cacheRead || null,
+        output_tokens: outputTokens || null,
+        input_with_cache: inputWithCache || null,
+        input_without_cache: inputWithoutCache || null,
         calculation_parameters: {
           inputTokens: record.inputTokens || record.input_tokens || 0,
-          outputTokens: record.outputTokens || record.output_tokens || 0,
-          cacheRead: record.cacheRead || record.cache_read || 0,
+          outputTokens: outputTokens,
+          cacheRead: cacheRead,
+          inputWithCache: inputWithCache,
+          inputWithoutCache: inputWithoutCache,
           cost: record.cost || record.Cost || 0,
           kind: record.kind || record.Kind || 'unknown',
           maxMode: record.maxMode || record.max_mode || 'No'
@@ -303,10 +317,12 @@ function mapCursorModelToOurModel(cursorModel: string): string {
     'gpt-3.5-turbo': 'gpt-3.5-turbo',
     'claude-3-opus': 'claude-3-opus',
     'claude-3-sonnet': 'claude-3-sonnet',
-    'auto': 'gpt-4', // Default mapping for auto model
+    'composer-1': 'composer-1',
+    'sonnet-4.5': 'sonnet-4.5',
+    'auto': 'sonnet-4.5', // Updated default mapping for auto model
   }
 
-  return modelMapping[cursorModel] || 'gpt-4'
+  return modelMapping[cursorModel] || 'sonnet-4.5'
 }
 
 export default router

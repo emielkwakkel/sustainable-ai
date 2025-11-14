@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { Pool } from 'pg'
 import { sustainableAICalculator } from '@susai/core'
 import type { TokenCalculatorFormData } from '@susai/types'
-import { getPresetById } from '@susai/config'
+import { getPresetById, getAIModelById } from '@susai/config'
 
 const router = Router()
 
@@ -110,6 +110,10 @@ router.get('/project/:projectId', async (req, res) => {
         c.custom_pue,
         c.custom_carbon_intensity,
         c.calculation_parameters,
+        c.cache_read,
+        c.output_tokens,
+        c.input_with_cache,
+        c.input_without_cache,
         c.results,
         c.created_at,
         c.updated_at,
@@ -184,10 +188,21 @@ router.get('/project/:projectId', async (req, res) => {
     const countResult = await pool.query(countQuery, countParams)
 
     // Process results to format tags properly
-    const calculations = result.rows.map(row => ({
-      ...row,
-      tags: Array.isArray(row.tags) ? row.tags.filter((tag: any) => tag.id !== null) : []
-    }))
+    // Ensure detailed token fields are always present (even if NULL in database or missing from row)
+    const calculations = result.rows.map(row => {
+      // Explicitly extract fields, handling both null and undefined
+      const calculation: any = {
+        ...row,
+        // Ensure detailed token fields are always present
+        // PostgreSQL returns null for NULL values, but we want to ensure they're always in the response
+        cache_read: ('cache_read' in row && row.cache_read !== undefined) ? row.cache_read : null,
+        output_tokens: ('output_tokens' in row && row.output_tokens !== undefined) ? row.output_tokens : null,
+        input_with_cache: ('input_with_cache' in row && row.input_with_cache !== undefined) ? row.input_with_cache : null,
+        input_without_cache: ('input_without_cache' in row && row.input_without_cache !== undefined) ? row.input_without_cache : null,
+        tags: Array.isArray(row.tags) ? row.tags.filter((tag: any) => tag.id !== null) : []
+      }
+      return calculation
+    })
 
     res.json({ 
       success: true, 
@@ -209,6 +224,121 @@ router.get('/project/:projectId', async (req, res) => {
   }
 })
 
+// Get a single calculation by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { user_id } = req.query
+
+    if (!user_id) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'user_id is required' 
+      })
+    }
+
+    const calculationIdInt = parseInt(id, 10)
+    if (isNaN(calculationIdInt)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid calculation ID' 
+      })
+    }
+
+    // Get calculation with project info to verify ownership
+    const result = await pool.query(`
+      SELECT 
+        c.id,
+        c.token_count,
+        c.model,
+        c.context_length,
+        c.context_window,
+        c.hardware,
+        c.data_center_provider,
+        c.data_center_region,
+        c.custom_pue,
+        c.custom_carbon_intensity,
+        c.calculation_parameters,
+        c.cache_read,
+        c.output_tokens,
+        c.input_with_cache,
+        c.input_without_cache,
+        c.results,
+        c.created_at,
+        c.updated_at
+      FROM calculations c
+      JOIN projects p ON c.project_id = p.id
+      WHERE c.id = $1 AND p.user_id = $2
+    `, [calculationIdInt, user_id])
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Calculation not found' 
+      })
+    }
+
+    const calculation = result.rows[0]
+    
+    // Debug: Log what we got from the database
+    console.log('GET /calculations/:id - Raw calculation from DB:', {
+      id: calculation.id,
+      cache_read: calculation.cache_read,
+      output_tokens: calculation.output_tokens,
+      input_with_cache: calculation.input_with_cache,
+      input_without_cache: calculation.input_without_cache,
+      hasCacheRead: 'cache_read' in calculation,
+      hasOutputTokens: 'output_tokens' in calculation,
+      hasInputWithCache: 'input_with_cache' in calculation,
+      hasInputWithoutCache: 'input_without_cache' in calculation,
+    })
+    
+    // Ensure detailed token fields are always present
+    // Explicitly set them to handle both null and undefined cases
+    const response: any = {
+      id: calculation.id,
+      project_id: calculation.project_id,
+      token_count: calculation.token_count,
+      model: calculation.model,
+      context_length: calculation.context_length,
+      context_window: calculation.context_window,
+      hardware: calculation.hardware,
+      data_center_provider: calculation.data_center_provider,
+      data_center_region: calculation.data_center_region,
+      custom_pue: calculation.custom_pue,
+      custom_carbon_intensity: calculation.custom_carbon_intensity,
+      calculation_parameters: calculation.calculation_parameters,
+      results: calculation.results,
+      created_at: calculation.created_at,
+      updated_at: calculation.updated_at,
+      // Explicitly set detailed token fields - always include them, use null if not present
+      cache_read: ('cache_read' in calculation) ? (calculation.cache_read ?? null) : null,
+      output_tokens: ('output_tokens' in calculation) ? (calculation.output_tokens ?? null) : null,
+      input_with_cache: ('input_with_cache' in calculation) ? (calculation.input_with_cache ?? null) : null,
+      input_without_cache: ('input_without_cache' in calculation) ? (calculation.input_without_cache ?? null) : null,
+    }
+
+    console.log('GET /calculations/:id - Response being sent:', {
+      id: response.id,
+      cache_read: response.cache_read,
+      output_tokens: response.output_tokens,
+      input_with_cache: response.input_with_cache,
+      input_without_cache: response.input_without_cache,
+    })
+
+    res.json({ 
+      success: true, 
+      data: response
+    })
+  } catch (error) {
+    console.error('Error fetching calculation:', error)
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch calculation' 
+    })
+  }
+})
+
 // Create a new calculation
 router.post('/', async (req, res) => {
   try {
@@ -224,6 +354,10 @@ router.post('/', async (req, res) => {
       custom_pue,
       custom_carbon_intensity,
       calculation_parameters,
+      cache_read,
+      output_tokens,
+      input_with_cache,
+      input_without_cache,
       results,
       user_id
     } = req.body
@@ -265,14 +399,16 @@ router.post('/', async (req, res) => {
       INSERT INTO calculations (
         project_id, token_count, model, context_length, context_window,
         hardware, data_center_provider, data_center_region, custom_pue,
-        custom_carbon_intensity, calculation_parameters, results
+        custom_carbon_intensity, calculation_parameters, cache_read,
+        output_tokens, input_with_cache, input_without_cache, results
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
     `, [
       project_id, token_count, model, finalContextLength, finalContextWindow,
       finalHardware, finalDataCenterProvider, finalDataCenterRegion, finalCustomPue,
-      finalCustomCarbonIntensity, calculation_parameters, results
+      finalCustomCarbonIntensity, calculation_parameters, cache_read ?? null,
+      output_tokens ?? null, input_with_cache ?? null, input_without_cache ?? null, results
     ])
 
     res.status(201).json({ success: true, data: result.rows[0] })
@@ -297,6 +433,10 @@ router.put('/:id', async (req, res) => {
       custom_pue,
       custom_carbon_intensity,
       calculation_parameters,
+      cache_read,
+      output_tokens,
+      input_with_cache,
+      input_without_cache,
       results,
       user_id
     } = req.body
@@ -378,14 +518,19 @@ router.put('/:id', async (req, res) => {
         custom_pue = $8,
         custom_carbon_intensity = $9,
         calculation_parameters = COALESCE($10, calculation_parameters),
-        results = COALESCE($11, results),
+        cache_read = COALESCE($11, cache_read),
+        output_tokens = COALESCE($12, output_tokens),
+        input_with_cache = COALESCE($13, input_with_cache),
+        input_without_cache = COALESCE($14, input_without_cache),
+        results = COALESCE($15, results),
         updated_at = NOW()
-      WHERE id = $12
+      WHERE id = $16
       RETURNING *
     `, [
       token_count, model, finalContextLength, finalContextWindow,
       finalHardware, finalDataCenterProvider, finalDataCenterRegion, finalCustomPue,
-      finalCustomCarbonIntensity, calculation_parameters, results, calculationIdInt
+      finalCustomCarbonIntensity, calculation_parameters, cache_read, output_tokens,
+      input_with_cache, input_without_cache, results, calculationIdInt
     ])
 
     res.json({ success: true, data: result.rows[0] })
@@ -476,8 +621,27 @@ router.post('/:id/recalculate', async (req, res) => {
     const usePresetContext = calc.context_length === null || calc.context_length === undefined ||
                              calc.context_window === null || calc.context_window === undefined
     
+    // Check if calculation has detailed token breakdown (at least one field is not null/undefined)
+    // We check for existence, not just > 0, because 0 is a valid value
+    const hasDetailedTokens = (
+      (calc.input_with_cache !== null && calc.input_with_cache !== undefined) ||
+      (calc.input_without_cache !== null && calc.input_without_cache !== undefined) ||
+      (calc.cache_read !== null && calc.cache_read !== undefined) ||
+      (calc.output_tokens !== null && calc.output_tokens !== undefined)
+    )
+
+    // Calculate total token count (sum of four fields) if detailed breakdown exists
+    // token_count should always remain as the sum, not weighted tokens
+    let totalTokenCount = calc.token_count
+    if (hasDetailedTokens) {
+      totalTokenCount = (calc.input_with_cache ?? 0) +
+                       (calc.input_without_cache ?? 0) +
+                       (calc.cache_read ?? 0) +
+                       (calc.output_tokens ?? 0)
+    }
+
     const formData: TokenCalculatorFormData = {
-      tokenCount: calc.token_count,
+      tokenCount: totalTokenCount, // Use total tokens (sum), core will calculate weighted internally
       model: calc.model,
       contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
       contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
@@ -494,22 +658,43 @@ router.post('/:id/recalculate', async (req, res) => {
       customCarbonIntensity: calc.custom_carbon_intensity !== null && calc.custom_carbon_intensity !== undefined
         ? calc.custom_carbon_intensity
         : preset.configuration.customCarbonIntensity,
+      // Include detailed token breakdown if available
+      useDetailedTokens: hasDetailedTokens,
+      inputWithCache: hasDetailedTokens ? (calc.input_with_cache ?? 0) : undefined,
+      inputWithoutCache: hasDetailedTokens ? (calc.input_without_cache ?? 0) : undefined,
+      cacheRead: hasDetailedTokens ? (calc.cache_read ?? 0) : undefined,
+      outputTokens: hasDetailedTokens ? (calc.output_tokens ?? 0) : undefined,
     }
 
     // Recalculate using the calculation engine
     const newResults = sustainableAICalculator.calculateFromFormData(formData)
 
+    // Update calculation_parameters to include weighted_tokens if detailed breakdown was used
+    // totalTokenCount was already calculated above, reuse it
+    let updatedCalculationParameters = calc.calculation_parameters || {}
+    if (hasDetailedTokens && newResults.weightedTokens !== undefined) {
+      updatedCalculationParameters = {
+        ...updatedCalculationParameters,
+        weightedTokens: newResults.weightedTokens
+      }
+    }
+
     // Update calculation with new results
     // Keep context values as NULL if they were NULL (indicating "use preset")
     // Only update results, not context values (they should remain NULL to indicate preset usage)
+    // token_count remains as total (sum), weighted tokens stored in calculation_parameters
     const updatedResult = await pool.query(`
       UPDATE calculations 
       SET 
-        results = $1,
+        token_count = $1,
+        calculation_parameters = $2,
+        results = $3,
         updated_at = NOW()
-      WHERE id = $2
+      WHERE id = $4
       RETURNING *
     `, [
+      totalTokenCount,
+      JSON.stringify(updatedCalculationParameters),
       JSON.stringify(newResults),
       calculationIdInt
     ])
@@ -560,8 +745,27 @@ router.post('/bulk-recalculate', async (req, res) => {
       const usePresetContext = calc.context_length === null || calc.context_length === undefined ||
                                calc.context_window === null || calc.context_window === undefined
       
+      // Check if calculation has detailed token breakdown (at least one field is not null/undefined)
+      // We check for existence, not just > 0, because 0 is a valid value
+      const hasDetailedTokens = (
+        (calc.input_with_cache !== null && calc.input_with_cache !== undefined) ||
+        (calc.input_without_cache !== null && calc.input_without_cache !== undefined) ||
+        (calc.cache_read !== null && calc.cache_read !== undefined) ||
+        (calc.output_tokens !== null && calc.output_tokens !== undefined)
+      )
+      
+      // Calculate total token count (sum of four fields) if detailed breakdown exists
+      // token_count should always remain as the sum, not weighted tokens
+      let totalTokenCount = calc.token_count
+      if (hasDetailedTokens) {
+        totalTokenCount = (calc.input_with_cache ?? 0) +
+                         (calc.input_without_cache ?? 0) +
+                         (calc.cache_read ?? 0) +
+                         (calc.output_tokens ?? 0)
+      }
+      
       const formData: TokenCalculatorFormData = {
-        tokenCount: calc.token_count,
+        tokenCount: totalTokenCount, // Use total tokens (sum), core will calculate weighted internally
         model: calc.model,
         contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
         contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
@@ -578,19 +782,40 @@ router.post('/bulk-recalculate', async (req, res) => {
         customCarbonIntensity: calc.custom_carbon_intensity !== null && calc.custom_carbon_intensity !== undefined
           ? calc.custom_carbon_intensity
           : preset.configuration.customCarbonIntensity,
+        // Include detailed token breakdown if available
+        useDetailedTokens: hasDetailedTokens,
+        inputWithCache: hasDetailedTokens ? (calc.input_with_cache ?? 0) : undefined,
+        inputWithoutCache: hasDetailedTokens ? (calc.input_without_cache ?? 0) : undefined,
+        cacheRead: hasDetailedTokens ? (calc.cache_read ?? 0) : undefined,
+        outputTokens: hasDetailedTokens ? (calc.output_tokens ?? 0) : undefined,
       }
 
       // Recalculate using the calculation engine
       const newResults = sustainableAICalculator.calculateFromFormData(formData)
 
+      // Update calculation_parameters to include weighted_tokens if detailed breakdown was used
+      // totalTokenCount was already calculated above, reuse it
+      let updatedCalculationParameters = calc.calculation_parameters || {}
+      if (hasDetailedTokens && newResults.weightedTokens !== undefined) {
+        updatedCalculationParameters = {
+          ...updatedCalculationParameters,
+          weightedTokens: newResults.weightedTokens
+        }
+      }
+
       // Update calculation with new results
+      // token_count remains as total (sum), weighted tokens stored in calculation_parameters
       await pool.query(`
         UPDATE calculations 
         SET 
-          results = $1,
+          token_count = $1,
+          calculation_parameters = $2,
+          results = $3,
           updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $4
       `, [
+        totalTokenCount,
+        JSON.stringify(updatedCalculationParameters),
         JSON.stringify(newResults),
         calc.id
       ])

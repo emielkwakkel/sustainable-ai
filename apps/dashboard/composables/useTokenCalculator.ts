@@ -3,7 +3,8 @@ import type {
   CalculationResult,
   AIModel,
   HardwareConfig,
-  DataCenterRegion
+  DataCenterRegion,
+  TokenWeights
 } from '@susai/types'
 import { 
   aiModels, 
@@ -11,11 +12,37 @@ import {
   dataCenterProviders,
   getRegionsForProvider,
   getPueForRegion,
-  getCarbonIntensityForRegion
+  getCarbonIntensityForRegion,
+  getAIModelById
 } from '@susai/config'
 import { sustainableAICalculator } from '@susai/core'
 
 export const useTokenCalculator = () => {
+
+  // Calculate weighted tokens from detailed token breakdown
+  const calculateWeightedTokens = (
+    inputWithCache: number,
+    inputWithoutCache: number,
+    cacheRead: number,
+    outputTokens: number,
+    modelId?: string,
+    tokenWeights?: TokenWeights
+  ): number => {
+    // Get model-specific weights if model is provided
+    let weights = tokenWeights
+    if (!weights && modelId) {
+      const model = getAIModelById(modelId)
+      weights = model?.tokenWeights
+    }
+    
+    return sustainableAICalculator.calculateWeightedTokens(
+      inputWithCache,
+      inputWithoutCache,
+      cacheRead,
+      outputTokens,
+      weights
+    )
+  }
 
   // Calculate energy and emissions using the core engine
   const calculateEmissions = (formData: TokenCalculatorFormData): CalculationResult => {
@@ -26,14 +53,41 @@ export const useTokenCalculator = () => {
   const validateFormData = (formData: TokenCalculatorFormData): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
 
-    // Validate token count
-    if (formData.tokenCount < 1 || formData.tokenCount > 5000000000) {
-      errors.push('Token count must be between 1 and 5,000,000,000')
+    // If using detailed tokens, validate those fields
+    if (formData.useDetailedTokens) {
+      if (formData.inputWithCache !== undefined && formData.inputWithCache < 0) {
+        errors.push('Input (w/ Cache Write) must be non-negative')
+      }
+      if (formData.inputWithoutCache !== undefined && formData.inputWithoutCache < 0) {
+        errors.push('Input (w/o Cache Write) must be non-negative')
+      }
+      if (formData.cacheRead !== undefined && formData.cacheRead < 0) {
+        errors.push('Cache Read must be non-negative')
+      }
+      if (formData.outputTokens !== undefined && formData.outputTokens < 0) {
+        errors.push('Output Tokens must be non-negative')
+      }
+      
+      // At least one detailed token field should have a value
+      const hasAnyDetailedTokens = 
+        (formData.inputWithCache ?? 0) > 0 ||
+        (formData.inputWithoutCache ?? 0) > 0 ||
+        (formData.cacheRead ?? 0) > 0 ||
+        (formData.outputTokens ?? 0) > 0
+      
+      if (!hasAnyDetailedTokens) {
+        errors.push('At least one detailed token field must have a value')
+      }
+    } else {
+      // Validate token count for simple mode
+      if (formData.tokenCount < 1 || formData.tokenCount > 5000000000) {
+        errors.push('Token count must be between 1 and 5,000,000,000')
+      }
     }
 
     // Validate context length
-    if (formData.contextLength < 1000 || formData.contextLength > 32000) {
-      errors.push('Context length must be between 1,000 and 32,000 tokens')
+    if (formData.contextLength < 1000 || formData.contextLength > 500000) {
+      errors.push('Context length must be between 1,000 and 500,000 tokens')
     }
 
     // Validate context window
@@ -72,6 +126,7 @@ export const useTokenCalculator = () => {
     hardwareConfigs,
     dataCenterProviders,
     calculateEmissions,
+    calculateWeightedTokens,
     validateFormData,
     formatNumber,
     formatLargeNumber,

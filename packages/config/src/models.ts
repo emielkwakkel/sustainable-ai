@@ -1,5 +1,14 @@
 import type { AIModel } from '@susai/types'
 
+// Default token weights based on FLOP/token research
+// Used for models that support cache differentiation
+const defaultTokenWeights = {
+  inputWithCache: 1.25,
+  inputWithoutCache: 1.00,
+  cacheRead: 0.10,
+  outputTokens: 5.00
+}
+
 // Predefined AI models
 export const aiModels: AIModel[] = [
   {
@@ -41,6 +50,24 @@ export const aiModels: AIModel[] = [
     contextLength: 4096,
     contextWindow: 1000,
     complexityFactor: 0.4 // 70B / 175B = 0.4x less complex than GPT-3
+  },
+  {
+    id: 'sonnet-4.5',
+    name: 'Sonnet 4.5',
+    parameters: 100,
+    contextLength: 200000,
+    contextWindow: 1500,
+    complexityFactor: 0.57, // Similar to Claude 3 Sonnet
+    tokenWeights: defaultTokenWeights
+  },
+  {
+    id: 'composer-1',
+    name: 'Composer 1',
+    parameters: 100,
+    contextLength: 200000,
+    contextWindow: 1500,
+    complexityFactor: 0.57, // Similar to Claude 3 Sonnet
+    tokenWeights: defaultTokenWeights
   }
 ]
 

@@ -262,6 +262,12 @@ export interface TokenCalculatorFormData {
   dataCenterRegion: string
   customPue?: number
   customCarbonIntensity?: number
+  // Detailed token breakdown (optional, for weighted calculation)
+  useDetailedTokens?: boolean
+  inputWithCache?: number
+  inputWithoutCache?: number
+  cacheRead?: number
+  outputTokens?: number
 }
 
 // Preset Types
@@ -323,6 +329,10 @@ export interface Calculation {
   custom_pue?: number
   custom_carbon_intensity?: number
   calculation_parameters?: any
+  cache_read?: number
+  output_tokens?: number
+  input_with_cache?: number
+  input_without_cache?: number
   results: CalculationResult
   created_at: string
   updated_at: string

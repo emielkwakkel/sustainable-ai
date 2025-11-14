@@ -127,6 +127,13 @@ export interface AvailableRegion {
 }
 
 // Token Calculator Types
+export interface TokenWeights {
+  inputWithCache: number // multiplier for input tokens with cache write
+  inputWithoutCache: number // multiplier for input tokens without cache write
+  cacheRead: number // multiplier for cache-read tokens
+  outputTokens: number // multiplier for output tokens
+}
+
 export interface AIModel {
   id: string
   name: string
@@ -134,6 +141,7 @@ export interface AIModel {
   contextLength: number
   contextWindow: number
   complexityFactor: number // relative to GPT-3 (1.0 = GPT-3 baseline)
+  tokenWeights?: TokenWeights // optional token weights for weighted token calculation
 }
 
 export interface HardwareConfig {
@@ -177,6 +185,7 @@ export interface CalculationResult {
   equivalentLightbulbMinutes: number
   equivalentCarMiles: number
   equivalentTreeHours: number
+  weightedTokens?: number // Weighted token count when detailed breakdown is used
 }
 
 export interface TokenCalculatorFormData {
@@ -189,6 +198,13 @@ export interface TokenCalculatorFormData {
   dataCenterRegion: string
   customPue?: number
   customCarbonIntensity?: number
+  // Detailed token breakdown (optional, for weighted calculation)
+  useDetailedTokens?: boolean
+  inputWithCache?: number
+  inputWithoutCache?: number
+  cacheRead?: number
+  outputTokens?: number
+  tokenWeights?: TokenWeights // optional override for model token weights
 }
 
 // Preset Types
@@ -234,6 +250,12 @@ export interface CalculationParams {
   contextWindow: number,
   customPue?: number
   customCarbonIntensity?: number
+  // Detailed token breakdown (optional, for weighted calculation)
+  inputWithCache?: number
+  inputWithoutCache?: number
+  cacheRead?: number
+  outputTokens?: number
+  tokenWeights?: TokenWeights // optional override for model token weights
 }
 
 export interface CalculationEngine {
