@@ -155,36 +155,28 @@
               </select>
             </div>
 
-            <!-- Context Length -->
-            <div>
-              <label for="contextLength" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Context Length (tokens)
-                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">(auto-set from model, can be overridden)</span>
-              </label>
-              <input
-                id="contextLength"
-                v-model.number="formData.contextLength"
-                type="number"
-                min="1000"
-                max="500000"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
             <!-- Context Window -->
             <div>
               <label for="contextWindow" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Context Window (tokens)
-                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">(auto-set from model, can be overridden)</span>
+                Context Window (tokens) *
               </label>
               <input
                 id="contextWindow"
                 v-model.number="formData.contextWindow"
                 type="number"
-                min="100"
-                max="2000"
+                :min="100"
+                :max="selectedModelContextLength || 2000"
+                required
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                :class="{ 'border-red-500 dark:border-red-500': contextWindowError }"
+                placeholder="Enter context window size"
               />
+              <p v-if="selectedModelContextLength" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Maximum for selected model: {{ selectedModelContextLength.toLocaleString() }} tokens
+              </p>
+              <p v-if="contextWindowError" class="text-xs text-red-600 dark:text-red-400 mt-1">
+                {{ contextWindowError }}
+              </p>
             </div>
 
             <!-- Hardware Selection -->
@@ -441,8 +433,8 @@ const useDetailedTokens = ref(false)
 const formData = ref<TokenCalculatorFormData>({
   tokenCount: 1000,
   model: 'gpt-4',
-  contextLength: 8000,
-  contextWindow: 1250,
+  contextLength: 8000, // Set from model, used for validation
+  contextWindow: 1250, // User-editable, actual processing amount
   hardware: 'nvidia-a100',
   dataCenterProvider: 'aws',
   dataCenterRegion: 'aws-asia-pacific-tokyo',
@@ -458,12 +450,20 @@ const isCalculating = ref(false)
 const isLoadingPreset = ref(false)
 const useCustomPue = ref(false)
 const useCustomCarbonIntensity = ref(false)
+const contextWindowError = ref<string | null>(null)
 
 // Computed: Get selected model's token weights
 const selectedModelWeights = computed(() => {
   if (!formData.value.model) return null
   const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
   return model?.tokenWeights || null
+})
+
+// Computed: Get selected model's context length (maximum capacity)
+const selectedModelContextLength = computed(() => {
+  if (!formData.value.model) return null
+  const model = aiModels.value.find(m => m.id === formData.value.model || m.name === formData.value.model)
+  return model?.contextLength || null
 })
 
 // Computed: Calculate weighted token count
@@ -515,6 +515,12 @@ const calculate = async () => {
       formDataForValidation.inputWithoutCache = undefined
       formDataForValidation.cacheRead = undefined
       formDataForValidation.outputTokens = undefined
+    }
+
+    // Validate context window doesn't exceed model's context length
+    if (contextWindowError.value) {
+      alert('Please fix the following error:\n' + contextWindowError.value)
+      return
     }
 
     // Validate form data
@@ -595,14 +601,24 @@ const handlePresetLoaded = async (configuration: TokenCalculatorFormData) => {
   }
 }
 
-// Auto-update context fields when model changes
+// Auto-update context length when model changes (for validation)
 watch(() => formData.value.model, (newModel: string) => {
-  const selectedModel = aiModels.value.find((m: AIModel) => m.id === newModel || m.name === newModel)
+  const selectedModel = aiModels.value.find(m => m.id === newModel || m.name === newModel)
   if (selectedModel) {
+    // Set context length from model (used for validation, not displayed)
     formData.value.contextLength = selectedModel.contextLength
-    formData.value.contextWindow = selectedModel.contextWindow
+    // Context window is not auto-set - user must enter it manually per calculation
   }
 })
+
+// Validate context window doesn't exceed model's context length
+watch([() => formData.value.contextWindow, selectedModelContextLength], ([window, maxLength]) => {
+  if (window && maxLength && window > maxLength) {
+    contextWindowError.value = `Context window cannot exceed model's maximum capacity of ${maxLength.toLocaleString()} tokens`
+  } else {
+    contextWindowError.value = null
+  }
+}, { immediate: true })
 
 // Auto-fill PUE when region changes
 watch(() => formData.value.dataCenterRegion, (newRegion) => {

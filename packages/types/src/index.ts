@@ -145,7 +145,7 @@ export interface AIModel {
   name: string
   parameters: number // in billions
   contextLength: number
-  contextWindow: number
+  contextWindow?: number // Optional - set per calculation, not per model
   complexityFactor: number // relative to GPT-3 (1.0 = GPT-3 baseline)
   tokenWeights?: TokenWeights // optional token weights for weighted token calculation
   pricing?: ModelPricing // optional pricing information
@@ -392,7 +392,7 @@ export interface CreateModelRequest {
   name: string
   parameters: number
   contextLength: number
-  contextWindow: number
+  contextWindow?: number // Optional - set per calculation, not per model
   tokenWeights?: TokenWeights
   pricing?: ModelPricing
 }

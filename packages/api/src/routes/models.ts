@@ -20,7 +20,7 @@ function transformModelRow(row: any): AIModel {
     name: row.name,
     parameters: row.parameters,
     contextLength: row.context_length,
-    contextWindow: row.context_window,
+    contextWindow: row.context_window || undefined, // Optional, may not exist after migration
     complexityFactor: parseFloat(row.complexity_factor),
     tokenWeights: row.token_weights || undefined,
     pricing: row.pricing || undefined,
@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        id, name, parameters, context_length, context_window,
+        id, name, parameters, context_length,
         token_weights, complexity_factor, pricing, is_system,
         created_at, updated_at
       FROM ai_models
@@ -62,7 +62,7 @@ router.get('/:id', async (req, res) => {
 
     const result = await pool.query(`
       SELECT 
-        id, name, parameters, context_length, context_window,
+        id, name, parameters, context_length,
         token_weights, complexity_factor, pricing, is_system,
         created_at, updated_at
       FROM ai_models
@@ -97,17 +97,17 @@ router.post('/', async (req, res) => {
     const { name, parameters, contextLength, contextWindow, tokenWeights, pricing }: CreateModelRequest = req.body
 
     // Validation
-    if (!name || !parameters || !contextLength || !contextWindow) {
+    if (!name || !parameters || !contextLength) {
       return res.status(400).json({
         success: false,
-        error: 'name, parameters, contextLength, and contextWindow are required'
+        error: 'name, parameters, and contextLength are required'
       })
     }
 
-    if (parameters <= 0 || contextLength <= 0 || contextWindow <= 0) {
+    if (parameters <= 0 || contextLength <= 0) {
       return res.status(400).json({
         success: false,
-        error: 'parameters, contextLength, and contextWindow must be positive numbers'
+        error: 'parameters and contextLength must be positive numbers'
       })
     }
 
@@ -126,19 +126,18 @@ router.post('/', async (req, res) => {
 
     const result = await pool.query(`
       INSERT INTO ai_models (
-        name, parameters, context_length, context_window,
+        name, parameters, context_length,
         token_weights, pricing, is_system
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING 
-        id, name, parameters, context_length, context_window,
+        id, name, parameters, context_length,
         token_weights, complexity_factor, pricing, is_system,
         created_at, updated_at
     `, [
       name,
       parameters,
       contextLength,
-      contextWindow,
       tokenWeights ? JSON.stringify(tokenWeights) : null,
       pricing ? JSON.stringify(pricing) : null,
       false // User-created models are not system models
@@ -221,16 +220,7 @@ router.put('/:id', async (req, res) => {
       values.push(contextLength)
     }
 
-    if (contextWindow !== undefined) {
-      if (contextWindow <= 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'contextWindow must be a positive number'
-        })
-      }
-      updates.push(`context_window = $${paramIndex++}`)
-      values.push(contextWindow)
-    }
+    // Context window is not stored per model - it's set per calculation
 
     if (tokenWeights !== undefined) {
       updates.push(`token_weights = $${paramIndex++}`)
@@ -255,7 +245,7 @@ router.put('/:id', async (req, res) => {
       SET ${updates.join(', ')}, updated_at = NOW()
       WHERE id = $${paramIndex}
       RETURNING 
-        id, name, parameters, context_length, context_window,
+        id, name, parameters, context_length,
         token_weights, complexity_factor, pricing, is_system,
         created_at, updated_at
     `, values)

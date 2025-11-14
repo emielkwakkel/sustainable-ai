@@ -17,7 +17,7 @@ function transformModelRow(row: any): AIModel {
     name: row.name,
     parameters: row.parameters,
     contextLength: row.context_length,
-    contextWindow: row.context_window,
+    contextWindow: row.context_window || undefined, // Optional, may not exist after migration
     complexityFactor: parseFloat(row.complexity_factor),
     tokenWeights: row.token_weights || undefined,
     pricing: row.pricing || undefined,
@@ -39,7 +39,7 @@ export async function fetchModelFromDB(modelId: string): Promise<AIModel | null>
       // If it's a UUID, compare directly with id column only
       result = await pool.query(`
         SELECT 
-          id, name, parameters, context_length, context_window,
+          id, name, parameters, context_length,
           token_weights, complexity_factor, pricing, is_system
         FROM ai_models
         WHERE id = $1::uuid
@@ -48,7 +48,7 @@ export async function fetchModelFromDB(modelId: string): Promise<AIModel | null>
       // If it's not a UUID, only compare with name (case-insensitive)
       result = await pool.query(`
         SELECT 
-          id, name, parameters, context_length, context_window,
+          id, name, parameters, context_length,
           token_weights, complexity_factor, pricing, is_system
         FROM ai_models
         WHERE LOWER(name) = LOWER($1)

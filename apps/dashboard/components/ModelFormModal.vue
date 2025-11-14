@@ -53,7 +53,7 @@
           <!-- Context Length -->
           <div>
             <label for="contextLength" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Context Length *
+              Context Length (Maximum Capacity) *
             </label>
             <input
               id="contextLength"
@@ -65,23 +65,9 @@
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., 8000"
             />
-          </div>
-
-          <!-- Context Window -->
-          <div>
-            <label for="contextWindow" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Context Window *
-            </label>
-            <input
-              id="contextWindow"
-              v-model.number="formData.contextWindow"
-              type="number"
-              required
-              min="1"
-              step="1"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., 1250"
-            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Maximum number of tokens this model can process. Context window (actual processing amount) is set per calculation.
+            </p>
           </div>
 
           <!-- Token Weights (Optional) -->
@@ -272,14 +258,12 @@ const formData = ref<{
   name: string
   parameters: number | null
   contextLength: number | null
-  contextWindow: number | null
   tokenWeights: TokenWeights | null
   pricing: ModelPricing | null
 }>({
   name: '',
   parameters: null,
   contextLength: null,
-  contextWindow: null,
   tokenWeights: null,
   pricing: null
 })
@@ -300,7 +284,6 @@ watch(() => props.model, (newModel) => {
       name: newModel.name,
       parameters: newModel.parameters,
       contextLength: newModel.contextLength,
-      contextWindow: newModel.contextWindow,
       tokenWeights: newModel.tokenWeights ? { ...newModel.tokenWeights } : null,
       pricing: newModel.pricing ? { ...newModel.pricing } : null
     }
@@ -315,7 +298,6 @@ const resetForm = () => {
     name: '',
     parameters: null,
     contextLength: null,
-    contextWindow: null,
     tokenWeights: null,
     pricing: null
   }
@@ -339,13 +321,13 @@ const clearPricing = () => {
 
 // Handle submit
 const handleSubmit = async () => {
-  if (!formData.value.name || !formData.value.parameters || !formData.value.contextLength || !formData.value.contextWindow) {
+  if (!formData.value.name || !formData.value.parameters || !formData.value.contextLength) {
     error.value = 'Please fill in all required fields'
     return
   }
 
-  if (formData.value.parameters <= 0 || formData.value.contextLength <= 0 || formData.value.contextWindow <= 0) {
-    error.value = 'Parameters, context length, and context window must be positive numbers'
+  if (formData.value.parameters <= 0 || formData.value.contextLength <= 0) {
+    error.value = 'Parameters and context length must be positive numbers'
     return
   }
 
@@ -357,7 +339,7 @@ const handleSubmit = async () => {
       name: formData.value.name,
       parameters: formData.value.parameters,
       contextLength: formData.value.contextLength,
-      contextWindow: formData.value.contextWindow,
+      // Context window is set per calculation, not per model
       tokenWeights: formData.value.tokenWeights || undefined,
       pricing: formData.value.pricing || undefined
     }

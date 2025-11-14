@@ -118,8 +118,10 @@ export const useTokenCalculator = () => {
     }
 
     // Validate context window
-    if (formData.contextWindow < 100 || formData.contextWindow > 2000) {
-      errors.push('Context window must be between 100 and 2,000 tokens')
+    // Maximum is the model's context length (maximum capacity), minimum is 100
+    const maxContextWindow = formData.contextLength || 2000 // Use model's context length if available, otherwise default to 2000
+    if (formData.contextWindow < 100 || formData.contextWindow > maxContextWindow) {
+      errors.push(`Context window must be between 100 and ${maxContextWindow.toLocaleString()} tokens (model's maximum capacity)`)
     }
 
     // Validate custom PUE if provided

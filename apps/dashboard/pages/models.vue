@@ -48,7 +48,7 @@
               Parameters
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Context
+              Context Length
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Complexity Factor
@@ -74,7 +74,7 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm text-gray-600 dark:text-gray-400">
-                {{ model.contextLength.toLocaleString() }} / {{ model.contextWindow.toLocaleString() }}
+                {{ model.contextLength.toLocaleString() }}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">

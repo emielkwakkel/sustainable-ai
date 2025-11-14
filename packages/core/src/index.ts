@@ -162,8 +162,10 @@ export class SustainableAICalculator implements CalculationEngine {
       errors.push('Context length must be between 1,000 and 500,000 tokens')
     }
 
-    if (params.contextWindow < 100 || params.contextWindow > 2000) {
-      errors.push('Context window must be between 100 and 2,000 tokens')
+    // Validate context window - maximum is the model's context length (maximum capacity)
+    const maxContextWindow = params.model.contextLength || 2000 // Use model's context length if available, otherwise default to 2000
+    if (params.contextWindow < 100 || params.contextWindow > maxContextWindow) {
+      errors.push(`Context window must be between 100 and ${maxContextWindow.toLocaleString()} tokens (model's maximum capacity)`)
     }
 
     if (params.customPue && (params.customPue < 1.0 || params.customPue > 3.0)) {

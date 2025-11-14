@@ -72,3 +72,20 @@ Our calculator implementation follows the research paper's proven methodology an
 - **Data Center**: Google Cloud Korea (PUE: 1.1, Carbon Intensity: 0.459 kg CO₂/kWh)
 - **Model**: GPT-4 (280B parameters, 1.6x complexity factor)
 - **Context Window**: 1250 tokens (0.372 adjustment factor)
+
+## Terminology Clarification
+
+**Important Note on Terminology**: The research paper uses the term "context window" to refer to the actual amount of context being processed (1250 tokens). However, in standard AI terminology:
+
+- **Context Length** (or **Context Window**): The maximum capacity of tokens a model can handle (e.g., GPT-4 can handle 8K, 32K, or 128K tokens)
+- **Context Length (actual)**: The actual number of tokens in a specific input sequence (can be ≤ maximum capacity)
+
+The research paper's "context window" of 1250 tokens refers to the **actual context length being processed** in that specific calculation, not GPT-4's maximum capacity (which is 8K tokens). In our implementation:
+
+- **Context Length** (in model definition): Maximum capacity the model can handle (e.g., 8000 for GPT-4)
+- **Context Window** (in calculation): The actual amount of context being processed in that specific calculation (e.g., 1250 tokens)
+
+This distinction allows users to:
+1. Define models with their maximum context capacity (Context Length)
+2. Specify the actual context being used per calculation (Context Window)
+3. Calculate energy based on the actual processing window, not just the model's maximum capacity
