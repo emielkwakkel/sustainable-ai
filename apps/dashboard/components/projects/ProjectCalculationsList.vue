@@ -97,7 +97,7 @@
                 {{ formatCO2(calculation.results.totalEmissionsGrams) }}
               </p>
               <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ formatEnergy(calculation.results.energyJoules) }}
+                {{ formatEnergyWh(calculation.results.energyJoules) }}
               </p>
             </div>
             <div class="flex items-center gap-1">
@@ -229,8 +229,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Calculator, RefreshCw, Loader2, Trash2, Edit, Tag as TagIcon } from 'lucide-vue-next'
-import type { Calculation, Tag } from '~/types/watttime'
-import { formatCO2, formatEnergy } from '~/utils/formatting'
+import type { Calculation } from '~/types/watttime'
+import { formatCO2 } from '~/utils/formatting'
 import TagAssignmentModal from './TagAssignmentModal.vue'
 import EditCalculationModal from './EditCalculationModal.vue'
 

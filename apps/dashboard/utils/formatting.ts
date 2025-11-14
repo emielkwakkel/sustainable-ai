@@ -75,16 +75,6 @@ export function formatEnergyWh(joules: number, decimals: number = 2): string {
 }
 
 /**
- * Format energy consumption with appropriate units (Wh, kWh, gWh)
- * @param joules - Energy in joules
- * @returns Formatted string with unit (max 2 decimals)
- * @deprecated Use formatEnergyWh instead
- */
-export function formatEnergy(joules: number): string {
-  return formatEnergyWh(joules)
-}
-
-/**
  * Format time duration with appropriate units (minutes, hours, days, weeks, months, years)
  * @param minutes - Duration in minutes
  * @param decimals - Number of decimal places (default: 1)

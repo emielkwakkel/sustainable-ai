@@ -60,7 +60,11 @@
     </div>
 
     <!-- Analytics Summary Cards -->
-    <ProjectSummary :analytics="analytics" :calculations="chartCalculations" />
+    <ProjectSummary 
+      :analytics="analytics" 
+      :calculations="chartCalculations" 
+      :has-active-filters="hasActiveFilters"
+    />
 
     <!-- Filters Section -->
     <ProjectFilters
@@ -168,10 +172,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { Settings } from 'lucide-vue-next'
-import type { Project, Calculation } from '~/types/watttime'
+import type { Calculation } from '~/types/watttime'
 import { useProject } from '../../composables/useProject'
 import { usePresets } from '~/composables/usePresets'
-import { formatCO2, formatEnergy } from '~/utils/formatting'
 import AddCalculationModal from '../../components/AddCalculationModal.vue'
 import ImportFromCursorModal from '../../components/ImportFromCursorModal.vue'
 import ImportCSVModal from '../../components/ImportCSVModal.vue'
@@ -220,6 +223,14 @@ const chartCalculations = ref<Calculation[]>([])
 const currentPreset = computed(() => {
   if (!project.value?.calculation_preset_id) return null
   return getPresetById(project.value.calculation_preset_id) || null
+})
+
+const hasActiveFilters = computed(() => {
+  return !!(
+    filters.value.startDate ||
+    filters.value.endDate ||
+    (filters.value.tagIds && filters.value.tagIds.length > 0)
+  )
 })
 
 // Methods
