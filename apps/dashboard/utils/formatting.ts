@@ -76,10 +76,14 @@ export function formatEnergyWh(joules: number | string | null | undefined, decim
   const watthours = numJoules / 3600
   const absValue = Math.abs(watthours)
 
-  if (absValue >= 1_000_000) {
-    // 1000 MWh = 1 GWh
-    const gigawatthours = watthours / 1_000_000
+  if (absValue >= 1_000_000_000) {
+    // 1,000,000,000 Wh = 1 GWh
+    const gigawatthours = watthours / 1_000_000_000
     return `${gigawatthours.toFixed(decimals)} GWh`
+  } else if (absValue >= 1_000_000) {
+    // 1,000,000 Wh = 1 MWh
+    const megawatthours = watthours / 1_000_000
+    return `${megawatthours.toFixed(decimals)} MWh`
   } else if (absValue >= 1000) {
     // 1000 Wh = 1 kWh
     const kilowatthours = watthours / 1000
