@@ -21,7 +21,9 @@
     </div>
 
     <!-- Connection Status Banner -->
-    <ConnectionBanner />
+    <ClientOnly>
+      <ConnectionBanner />
+    </ClientOnly>
 
     <!-- Dashboard Content -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

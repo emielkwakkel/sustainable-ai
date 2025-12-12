@@ -4,7 +4,6 @@
     <ProjectHeader
       :project="project"
       @import-csv="showImportCSVModal = true"
-      @import-api="showImportModal = true"
       @add-calculation="showAddCalculationModal = true"
     />
 
@@ -103,13 +102,6 @@
       @created="handleCalculationCreated"
     />
 
-    <ImportFromCursorModal
-      v-if="showImportModal"
-      :project-id="projectId"
-      @close="showImportModal = false"
-      @imported="handleDataImported"
-    />
-
     <ImportCSVModal
       v-if="showImportCSVModal"
       :project-id="projectId"
@@ -178,7 +170,6 @@ import { fetchAIModels } from '@susai/config'
 import { useProject } from '../../composables/useProject'
 import { usePresets } from '~/composables/usePresets'
 import AddCalculationModal from '../../components/AddCalculationModal.vue'
-import ImportFromCursorModal from '../../components/ImportFromCursorModal.vue'
 import ImportCSVModal from '../../components/ImportCSVModal.vue'
 import ProjectHeader from '../../components/projects/ProjectHeader.vue'
 import ProjectSummary from '../../components/projects/ProjectSummary.vue'
@@ -233,7 +224,6 @@ const getAllPresets = () => {
 
 // State
 const showAddCalculationModal = ref(false)
-const showImportModal = ref(false)
 const showImportCSVModal = ref(false)
 const showPresetModal = ref(false)
 
@@ -270,7 +260,6 @@ const handleCalculationCreated = async () => {
 }
 
 const handleDataImported = async () => {
-  showImportModal.value = false
   showImportCSVModal.value = false
   await fetchProject()
   await loadCalculations()

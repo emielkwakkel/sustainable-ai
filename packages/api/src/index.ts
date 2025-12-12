@@ -12,7 +12,6 @@ import { healthRoutes } from './routes/health'
 import { watttimeRoutes } from './routes/watttime'
 import projectsRoutes from './routes/projects'
 import calculationsRoutes from './routes/calculations'
-import cursorImportRoutes from './routes/cursor-import'
 import csvImportRoutes from './routes/csv-import'
 import { tokenSimulatorRoutes } from './routes/token-simulator'
 import tagsRoutes from './routes/tags'
@@ -45,7 +44,6 @@ app.use('/api/config', configRoutes)
 app.use('/api/watttime', watttimeRoutes)
 app.use('/api/projects', projectsRoutes)
 app.use('/api/calculations', calculationsRoutes)
-app.use('/api/cursor-import', cursorImportRoutes)
 app.use('/api/csv-import', csvImportRoutes)
 app.use('/api/token-simulator', tokenSimulatorRoutes)
 app.use('/api/tags', tagsRoutes)

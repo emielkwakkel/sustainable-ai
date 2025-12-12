@@ -1,4 +1,4 @@
-import type { Project, Calculation, ProjectAnalytics, ProjectApiResponse, CalculationsApiResponse, CursorImportApiResponse } from '../types/watttime'
+import type { Project, Calculation, ProjectAnalytics, ProjectApiResponse, CalculationsApiResponse } from '../types/watttime'
 
 // Use native fetch to avoid Nuxt type inference issues
 const fetchApi = async (url: string, options?: any): Promise<any> => {
@@ -233,40 +233,6 @@ export const useProject = (projectId: string) => {
     }
   }
 
-  const importFromCursor = async (importData: {
-    start_date: string
-    end_date: string
-    api_token: string
-  }) => {
-    loading.value = true
-    error.value = null
-
-    try {
-      const response = await fetchApi('/api/cursor-import/import', {
-        method: 'POST',
-        body: {
-          ...importData,
-          project_id: projectId,
-          user_id: 'default-user' // TODO: Get from auth
-        }
-      })
-
-      if (response.success) {
-        await fetchProject() // Refresh project data
-        await fetchCalculations() // Refresh calculations
-        return response.data
-      } else {
-        throw new Error(response.error || 'Failed to import from Cursor')
-      }
-    } catch (err) {
-      console.error('Error importing from Cursor:', err)
-      error.value = err instanceof Error ? err.message : 'Failed to import from Cursor'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
   const recalculateProject = async (algorithmVersion: string = '1.0.0') => {
     loading.value = true
     error.value = null
@@ -338,7 +304,6 @@ export const useProject = (projectId: string) => {
     updateCalculation,
     deleteCalculation,
     bulkDeleteCalculations,
-    importFromCursor,
     recalculateProject
   }
 }

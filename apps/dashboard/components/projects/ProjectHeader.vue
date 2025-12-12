@@ -22,13 +22,6 @@
         CSV Import from Cursor
       </button>
       <button
-        @click="$emit('import-api')"
-        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-      >
-        <Download class="w-4 h-4" />
-        Import from Cursor
-      </button>
-      <button
         @click="$emit('add-calculation')"
         class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
       >
@@ -40,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronRight, Download, Plus, FileText } from 'lucide-vue-next'
+import { ChevronRight, Plus, FileText } from 'lucide-vue-next'
 import type { Project } from '~/types/watttime'
 
 interface Props {
@@ -49,7 +42,6 @@ interface Props {
 
 interface Emits {
   (e: 'import-csv'): void
-  (e: 'import-api'): void
   (e: 'add-calculation'): void
 }
 

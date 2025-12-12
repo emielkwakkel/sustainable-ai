@@ -1,4 +1,4 @@
-import type { WattTimeTokenInfo, WattTimeConnectionStatus, ConnectionStatus, CursorConnectionStatus } from '~/types/watttime'
+import type { WattTimeTokenInfo, WattTimeConnectionStatus, ConnectionStatus } from '~/types/watttime'
 
 const TOKEN_STORAGE_KEY = 'watttime_token'
 const TOKEN_EXPIRY_STORAGE_KEY = 'watttime_token_expires'
@@ -13,17 +13,11 @@ export const useTokenManager = () => {
     lastChecked: new Date()
   })
 
-  // Reactive state for Cursor API connection status
-  const cursorStatus = ref<CursorConnectionStatus>({
-    connected: false
-  })
-
   // Combined connection status
   const connectionStatus = computed<ConnectionStatus>(() => ({
     watttime: watttimeStatus.value,
     api: apiHealth.value,
-    cursor: cursorStatus.value,
-    overall: watttimeStatus.value.connected && apiHealth.value.healthy && cursorStatus.value.connected
+    overall: watttimeStatus.value.connected && apiHealth.value.healthy
   }))
 
   // Check if token exists and is valid
@@ -112,32 +106,12 @@ export const useTokenManager = () => {
     return watttimeStatus.value
   }
 
-  // Check Cursor API connection status
-  const checkCursorStatus = (): CursorConnectionStatus => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('cursor_api_token')
-      cursorStatus.value = {
-        connected: token !== null,
-        lastTest: token ? new Date().toISOString() : undefined
-      }
-    } else {
-      cursorStatus.value = {
-        connected: false
-      }
-    }
-    
-    return cursorStatus.value
-  }
-
   // Check both connection statuses
   const checkConnectionStatus = async (): Promise<ConnectionStatus> => {
     await Promise.all([
       checkWattTimeStatus(),
       checkApiHealth()
     ])
-    
-    // Check Cursor status synchronously
-    checkCursorStatus()
     
     return connectionStatus.value
   }
@@ -151,14 +125,12 @@ export const useTokenManager = () => {
     connectionStatus: readonly(connectionStatus),
     watttimeStatus: readonly(watttimeStatus),
     apiHealth: readonly(apiHealth),
-    cursorStatus: readonly(cursorStatus),
     isTokenValid,
     getTokenInfo,
     storeToken,
     removeToken,
     checkConnectionStatus,
     checkWattTimeStatus,
-    checkApiHealth,
-    checkCursorStatus
+    checkApiHealth
   }
 }

@@ -52,15 +52,9 @@ export interface ApiHealthStatus {
 }
 
 // Combined Connection Status
-export interface CursorConnectionStatus {
-  connected: boolean
-  lastTest?: string
-}
-
 export interface ConnectionStatus {
   watttime: WattTimeConnectionStatus
   api: ApiHealthStatus
-  cursor: CursorConnectionStatus
   overall: boolean
 }
 
@@ -119,25 +113,6 @@ export interface CalculationsApiResponse {
   error?: string
 }
 
-export interface CursorImportApiResponse {
-  success: boolean
-  data: {
-    importId: string
-    importedCount: number
-    calculationIds: string[]
-    dateRange: {
-      start_date: string
-      end_date: string
-    }
-  }
-  error?: string
-}
-
-export interface CursorTestApiResponse {
-  success: boolean
-  message?: string
-  error?: string
-}
 
 // Carbon intensity data types
 export interface CarbonIntensityData {
@@ -352,24 +327,3 @@ export interface ProjectAnalytics {
   }
 }
 
-export interface CursorImport {
-  id: string
-  project_id: string
-  start_date: string
-  end_date: string
-  raw_data: any
-  imported_at: string
-  status: string
-  record_count?: number
-}
-
-export interface CursorUsageData {
-  date: string
-  kind: string
-  model: string
-  maxMode: string
-  inputTokens: number
-  outputTokens: number
-  totalTokens: number
-  cost: number
-}
