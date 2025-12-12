@@ -134,7 +134,6 @@ router.get('/project/:projectId', async (req, res) => {
         c.token_count,
         c.model,
         COALESCE(m.name, c.model) as model_name,
-        c.context_length,
         c.context_window,
         c.hardware,
         c.data_center_provider,
@@ -289,7 +288,6 @@ router.get('/:id', async (req, res) => {
         c.token_count,
         c.model,
         COALESCE(m.name, c.model) as model_name,
-        c.context_length,
         c.context_window,
         c.hardware,
         c.data_center_provider,
@@ -343,7 +341,6 @@ router.get('/:id', async (req, res) => {
       project_id: calculation.project_id,
       token_count: calculation.token_count,
       model: calculation.model,
-      context_length: calculation.context_length,
       context_window: calculation.context_window,
       hardware: calculation.hardware,
       data_center_provider: calculation.data_center_provider,
@@ -389,7 +386,6 @@ router.post('/', async (req, res) => {
       project_id,
       token_count,
       model,
-      context_length,
       context_window,
       hardware,
       data_center_provider,
@@ -429,8 +425,7 @@ router.post('/', async (req, res) => {
       })
     }
 
-    // Use preset values for context_length and context_window if not provided
-    const finalContextLength = context_length ?? preset.configuration.contextLength
+    // Use preset values for context_window if not provided
     const finalContextWindow = context_window ?? preset.configuration.contextWindow
     const finalHardware = hardware ?? preset.configuration.hardware
     const finalDataCenterProvider = data_center_provider ?? preset.configuration.dataCenterProvider
@@ -440,15 +435,15 @@ router.post('/', async (req, res) => {
 
     const result = await pool.query(`
       INSERT INTO calculations (
-        project_id, token_count, model, context_length, context_window,
+        project_id, token_count, model, context_window,
         hardware, data_center_provider, data_center_region, custom_pue,
         custom_carbon_intensity, calculation_parameters, cache_read,
         output_tokens, input_with_cache, input_without_cache, results
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
     `, [
-      project_id, token_count, model, finalContextLength, finalContextWindow,
+      project_id, token_count, model, finalContextWindow,
       finalHardware, finalDataCenterProvider, finalDataCenterRegion, finalCustomPue,
       finalCustomCarbonIntensity, calculation_parameters, cache_read ?? null,
       output_tokens ?? null, input_with_cache ?? null, input_without_cache ?? null, results
@@ -468,7 +463,6 @@ router.put('/:id', async (req, res) => {
     const {
       token_count,
       model,
-      context_length,
       context_window,
       hardware,
       data_center_provider,
@@ -526,7 +520,7 @@ router.put('/:id', async (req, res) => {
 
     // Get current calculation values
     const currentCalc = await pool.query(`
-      SELECT context_length, context_window, hardware, data_center_provider, 
+      SELECT context_window, hardware, data_center_provider, 
              data_center_region, custom_pue, custom_carbon_intensity
       FROM calculations WHERE id = $1
     `, [calculationIdInt])
@@ -536,9 +530,6 @@ router.put('/:id', async (req, res) => {
     // Use provided values if present, otherwise use preset values (not current values)
     // If null is explicitly passed, it means "use preset" - set to NULL in DB
     // If undefined is passed, keep current value
-    const finalContextLength = context_length !== undefined 
-      ? (context_length === null ? null : context_length)
-      : preset.configuration.contextLength
     const finalContextWindow = context_window !== undefined 
       ? (context_window === null ? null : context_window)
       : preset.configuration.contextWindow
@@ -553,24 +544,23 @@ router.put('/:id', async (req, res) => {
       SET 
         token_count = COALESCE($1, token_count),
         model = COALESCE($2, model),
-        context_length = $3,
-        context_window = $4,
-        hardware = COALESCE($5, hardware),
-        data_center_provider = COALESCE($6, data_center_provider),
-        data_center_region = COALESCE($7, data_center_region),
-        custom_pue = $8,
-        custom_carbon_intensity = $9,
-        calculation_parameters = COALESCE($10, calculation_parameters),
-        cache_read = COALESCE($11, cache_read),
-        output_tokens = COALESCE($12, output_tokens),
-        input_with_cache = COALESCE($13, input_with_cache),
-        input_without_cache = COALESCE($14, input_without_cache),
-        results = COALESCE($15, results),
+        context_window = $3,
+        hardware = COALESCE($4, hardware),
+        data_center_provider = COALESCE($5, data_center_provider),
+        data_center_region = COALESCE($6, data_center_region),
+        custom_pue = $7,
+        custom_carbon_intensity = $8,
+        calculation_parameters = COALESCE($9, calculation_parameters),
+        cache_read = COALESCE($10, cache_read),
+        output_tokens = COALESCE($11, output_tokens),
+        input_with_cache = COALESCE($12, input_with_cache),
+        input_without_cache = COALESCE($13, input_without_cache),
+        results = COALESCE($14, results),
         updated_at = NOW()
-      WHERE id = $16
+      WHERE id = $15
       RETURNING *
     `, [
-      token_count, model, finalContextLength, finalContextWindow,
+      token_count, model, finalContextWindow,
       finalHardware, finalDataCenterProvider, finalDataCenterRegion, finalCustomPue,
       finalCustomCarbonIntensity, calculation_parameters, cache_read, output_tokens,
       input_with_cache, input_without_cache, results, calculationIdInt
@@ -659,10 +649,9 @@ router.post('/:id/recalculate', async (req, res) => {
       })
     }
 
-    // Use preset values for context_length and context_window
-    // If calculation has NULL context values, use preset; otherwise use stored values (they're overrides)
-    const usePresetContext = calc.context_length === null || calc.context_length === undefined ||
-                             calc.context_window === null || calc.context_window === undefined
+    // Use preset values for context_window
+    // If calculation has NULL context_window, use preset; otherwise use stored value (it's an override)
+    const usePresetContext = calc.context_window === null || calc.context_window === undefined
     
     // Check if calculation has detailed token breakdown (at least one field is not null/undefined)
     // We check for existence, not just > 0, because 0 is a valid value
@@ -686,7 +675,6 @@ router.post('/:id/recalculate', async (req, res) => {
     const formData: TokenCalculatorFormData = {
       tokenCount: totalTokenCount, // Use total tokens (sum), core will calculate weighted internally
       model: calc.model,
-      contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
       contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
       // Always use current preset values for hardware/provider/region when recalculating
       // This ensures consistency with the current preset configuration
@@ -1024,14 +1012,14 @@ router.post('/bulk-import', async (req, res) => {
       for (const calc of calculations) {
         const result = await pool.query(`
           INSERT INTO calculations (
-            project_id, token_count, model, context_length, context_window,
+            project_id, token_count, model, context_window,
             hardware, data_center_provider, data_center_region, custom_pue,
             custom_carbon_intensity, calculation_parameters, results
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           RETURNING id
         `, [
-          project_id, calc.token_count, calc.model, calc.context_length, calc.context_window,
+          project_id, calc.token_count, calc.model, calc.context_window,
           calc.hardware, calc.data_center_provider, calc.data_center_region, calc.custom_pue,
           calc.custom_carbon_intensity, calc.calculation_parameters, calc.results
         ])

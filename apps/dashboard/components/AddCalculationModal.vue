@@ -100,7 +100,6 @@ const contextWindowError = ref<string | null>(null)
 const calculatorFormData = ref<TokenCalculatorFormData>({
   tokenCount: 1000,
   model: '', // Will be set when models are loaded from API
-  contextLength: 0, // Will be set from selected model
   contextWindow: 1250,
   hardware: 'nvidia-a100',
   dataCenterProvider: 'aws',
@@ -117,7 +116,6 @@ const formData = computed({
   get: () => ({
     token_count: calculatorFormData.value.tokenCount,
     model: calculatorFormData.value.model,
-    context_length: calculatorFormData.value.contextLength,
     context_window: calculatorFormData.value.contextWindow,
     hardware: calculatorFormData.value.hardware,
     data_center_provider: calculatorFormData.value.dataCenterProvider,
@@ -131,7 +129,6 @@ const formData = computed({
     calculatorFormData.value = {
       tokenCount: val.token_count,
       model: val.model,
-      contextLength: val.context_length,
       contextWindow: val.context_window,
       hardware: val.hardware,
       dataCenterProvider: val.data_center_provider,
@@ -149,8 +146,10 @@ const formData = computed({
 if (props.projectPresetId) {
   const presetConfig = getPresetConfiguration(props.projectPresetId)
   if (presetConfig) {
+    // Exclude contextLength if present (from old presets)
+    const { contextLength, ...configWithoutContextLength } = presetConfig as any
     calculatorFormData.value = {
-      ...presetConfig,
+      ...configWithoutContextLength,
       inputWithCache: 0,
       inputWithoutCache: 0,
       cacheRead: 0,
@@ -167,24 +166,19 @@ watch([aiModels, isLoadingModels], ([models, isLoading]) => {
     const firstModel = models[0]
     if (firstModel) {
       calculatorFormData.value.model = firstModel.id
-      calculatorFormData.value.contextLength = firstModel.contextLength
     }
   }
 }, { immediate: true })
 
-// Auto-update context length when model changes
-watch(() => calculatorFormData.value.model, (newModel: string) => {
-  if (!newModel) return
-  const selectedModel = aiModels.value.find(m => m.id === newModel || m.name === newModel)
-  if (selectedModel) {
-    calculatorFormData.value.contextLength = selectedModel.contextLength
-  }
-})
-
-// Watch for context window validation
-watch([() => calculatorFormData.value.contextWindow, () => calculatorFormData.value.contextLength], ([window, maxLength]) => {
-  if (window && maxLength && window > maxLength) {
-    contextWindowError.value = `Context window cannot exceed model's maximum capacity of ${maxLength.toLocaleString()} tokens`
+// Watch for context window validation (using model's contextLength for max validation)
+watch([() => calculatorFormData.value.contextWindow, () => calculatorFormData.value.model], ([window, modelId]) => {
+  if (window && modelId) {
+    const selectedModel = aiModels.value.find(m => m.id === modelId || m.name === modelId)
+    if (selectedModel && selectedModel.contextLength && window > selectedModel.contextLength) {
+      contextWindowError.value = `Context window cannot exceed model's maximum capacity of ${selectedModel.contextLength.toLocaleString()} tokens`
+    } else {
+      contextWindowError.value = null
+    }
   } else {
     contextWindowError.value = null
   }
@@ -223,7 +217,6 @@ const handleSubmit = async () => {
     const formDataForValidation: any = {
       tokenCount: totalTokenCount, // Use total tokens (sum), core will calculate weighted internally
       model: formData.value.model,
-      contextLength: formData.value.context_length,
       contextWindow: formData.value.context_window,
       hardware: formData.value.hardware,
       dataCenterProvider: formData.value.data_center_provider,
@@ -253,7 +246,6 @@ const handleSubmit = async () => {
     const calculationData: any = {
       token_count: totalTokenCount,
       model: formData.value.model,
-      context_length: formData.value.context_length,
       context_window: formData.value.context_window,
       hardware: formData.value.hardware,
       data_center_provider: formData.value.data_center_provider,
@@ -292,7 +284,6 @@ const handleSubmit = async () => {
     calculatorFormData.value = {
       tokenCount: 1000,
       model: '', // Will be set when models are loaded from API
-      contextLength: 0, // Will be set from selected model
       contextWindow: 1250,
       hardware: 'nvidia-a100',
       dataCenterProvider: 'aws',

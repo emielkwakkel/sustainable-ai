@@ -143,7 +143,6 @@ async function convertCSVRowToCalculation(
   const formData: TokenCalculatorFormData = {
     tokenCount: totalTokens,
     model: modelId,
-    contextLength: preset.configuration.contextLength,
     contextWindow: preset.configuration.contextWindow,
     hardware: preset.configuration.hardware,
     dataCenterProvider: preset.configuration.dataCenterProvider,
@@ -171,7 +170,6 @@ async function convertCSVRowToCalculation(
     project_id: projectId,
     token_count: totalTokens,
     model: modelId,
-    context_length: formData.contextLength,
     context_window: formData.contextWindow,
     hardware: formData.hardware,
     data_center_provider: formData.dataCenterProvider,
@@ -317,18 +315,17 @@ router.post('/import', async (req, res) => {
           // Pass Date object directly - pg library will handle conversion
           const result = await pool.query(`
             INSERT INTO calculations (
-              project_id, token_count, model, context_length, context_window,
+              project_id, token_count, model, context_window,
               hardware, data_center_provider, data_center_region, custom_pue,
               custom_carbon_intensity, calculation_parameters, cache_read,
               output_tokens, input_with_cache, input_without_cache, results, created_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             RETURNING id, created_at
           `, [
             calculation.project_id,
             calculation.token_count,
             calculation.model,
-            calculation.context_length,
             calculation.context_window,
             calculation.hardware,
             calculation.data_center_provider,

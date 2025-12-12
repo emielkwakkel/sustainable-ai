@@ -117,10 +117,10 @@ router.post('/', async (req, res) => {
     }
 
     // Validate configuration structure
-    if (!configuration.model || !configuration.contextLength || !configuration.contextWindow) {
+    if (!configuration.model || !configuration.contextWindow) {
       return res.status(400).json({
         success: false,
-        error: 'configuration must include model, contextLength, and contextWindow'
+        error: 'configuration must include model and contextWindow'
       })
     }
 

@@ -252,10 +252,11 @@ export interface CalculationResult {
   equivalentTreeHours: number
 }
 
+// TokenCalculatorFormData is now imported from @susai/types
+// This local definition is kept for backward compatibility but should match the one in packages/types
 export interface TokenCalculatorFormData {
   tokenCount: number
   model: string // UUID of the AI model
-  contextLength: number
   contextWindow: number
   hardware: string
   dataCenterProvider: string
@@ -323,7 +324,6 @@ export interface Calculation {
   token_count: number
   model: string
   model_name?: string // Model name from ai_models table (fallback to model if not found)
-  context_length?: number
   context_window?: number
   hardware?: string
   data_center_provider?: string

@@ -151,40 +151,25 @@
             </option>
           </select>
           <p v-if="selectedPreset && selectedPresetId !== 'project-default'" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Model: {{ selectedPreset.configuration.model }}, Context Length: {{ selectedPreset.configuration.contextLength }}, Context Window: {{ selectedPreset.configuration.contextWindow }}
+            Model: {{ selectedPreset.configuration.model }}, Context Window: {{ selectedPreset.configuration.contextWindow }}
           </p>
           <p v-else-if="selectedPresetId === 'project-default'" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Using project preset: {{ projectPresetName }}
           </p>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Context Length
-              <span class="text-xs text-gray-500 dark:text-gray-400">(leave empty to use preset)</span>
-            </label>
-            <input
-              v-model.number="formData.context_length"
-              type="number"
-              min="1"
-              :placeholder="projectPresetContextLength?.toString() || ''"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Context Window
-              <span class="text-xs text-gray-500 dark:text-gray-400">(leave empty to use preset)</span>
-            </label>
-            <input
-              v-model.number="formData.context_window"
-              type="number"
-              min="1"
-              :placeholder="projectPresetContextWindow?.toString() || ''"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            />
-          </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Context Window
+            <span class="text-xs text-gray-500 dark:text-gray-400">(leave empty to use preset)</span>
+          </label>
+          <input
+            v-model.number="formData.context_window"
+            type="number"
+            min="1"
+            :placeholder="projectPresetContextWindow?.toString() || ''"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          />
         </div>
 
         <div class="flex justify-end gap-2 mt-6">
@@ -245,7 +230,6 @@ const allPresets = computed(() => getAllPresets())
 const formData = ref({
   token_count: 0,
   model: '',
-  context_length: null as number | null,
   context_window: null as number | null,
   hardware: '',
   data_center_provider: '',
@@ -310,10 +294,6 @@ const projectPresetName = computed(() => {
   return projectPreset.value?.name || 'Unknown'
 })
 
-const projectPresetContextLength = computed(() => {
-  return projectPreset.value?.configuration.contextLength
-})
-
 const projectPresetContextWindow = computed(() => {
   return projectPreset.value?.configuration.contextWindow
 })
@@ -334,9 +314,8 @@ onMounted(async () => {
 
 // Find preset ID from calculation's model and context values, or use project preset
 const findPresetForCalculation = (calc: Calculation): string => {
-  // If context values are NULL, calculation is using project preset defaults
-  if ((calc.context_length === null || calc.context_length === undefined) &&
-      (calc.context_window === null || calc.context_window === undefined)) {
+  // If context_window is NULL, calculation is using project preset defaults
+  if (calc.context_window === null || calc.context_window === undefined) {
     return 'project-default'
   }
   
@@ -344,16 +323,14 @@ const findPresetForCalculation = (calc: Calculation): string => {
   const projectPresetId = props.projectPresetId || project.value?.calculation_preset_id
   const projectPresetConfig = projectPresetId ? getPresetById(projectPresetId) : null
   
-  // If we have context values, try to match to a preset
+  // If we have context_window, try to match to a preset
   // Check all presets (including project preset) to find the best match
-  if (calc.context_length !== null && calc.context_length !== undefined &&
-      calc.context_window !== null && calc.context_window !== undefined) {
+  if (calc.context_window !== null && calc.context_window !== undefined) {
     
     // First, check if values match project preset exactly
     if (projectPresetConfig) {
       const matchesProjectPreset = 
         calc.model === projectPresetConfig.configuration.model &&
-        calc.context_length === projectPresetConfig.configuration.contextLength &&
         calc.context_window === projectPresetConfig.configuration.contextWindow &&
         (calc.hardware || '') === (projectPresetConfig.configuration.hardware || '') &&
         (calc.data_center_provider || '') === (projectPresetConfig.configuration.dataCenterProvider || '') &&
@@ -365,11 +342,10 @@ const findPresetForCalculation = (calc: Calculation): string => {
     }
     
     // Try to find a matching preset by checking all fields
-    // Priority: exact match on all fields > match on model + context values > match on context values only
+    // Priority: exact match on all fields > match on model + context window > match on context window only
     const matchingPreset = allPresets.value.find(preset => {
       const config = preset.configuration
       return config.model === calc.model &&
-             config.contextLength === calc.context_length &&
              config.contextWindow === calc.context_window &&
              (config.hardware || '') === (calc.hardware || '') &&
              (config.dataCenterProvider || '') === (calc.data_center_provider || '') &&
@@ -380,11 +356,10 @@ const findPresetForCalculation = (calc: Calculation): string => {
       return matchingPreset.id
     }
     
-    // Fallback: match on model + context values only (in case hardware/data center were manually changed)
+    // Fallback: match on model + context window only (in case hardware/data center were manually changed)
     const fallbackPreset = allPresets.value.find(preset => {
       const config = preset.configuration
       return config.model === calc.model &&
-             config.contextLength === calc.context_length &&
              config.contextWindow === calc.context_window
     })
     
@@ -423,7 +398,6 @@ watch(() => props.calculation, (newCalc) => {
     formData.value = {
       token_count: newCalc.token_count,
       model: newCalc.model,
-      context_length: newCalc.context_length ?? null,
       context_window: newCalc.context_window ?? null,
       hardware: newCalc.hardware || '',
       data_center_provider: newCalc.data_center_provider || '',
@@ -468,15 +442,13 @@ const handlePresetChange = () => {
       formData.value.hardware = preset.configuration.hardware || ''
       formData.value.data_center_provider = preset.configuration.dataCenterProvider || ''
       formData.value.data_center_region = preset.configuration.dataCenterRegion || ''
-      // Set context values to null to indicate using preset defaults
-      formData.value.context_length = null
+      // Set context_window to null to indicate using preset defaults
       formData.value.context_window = null
     }
   } else {
     const preset = selectedPreset.value
     if (preset) {
       formData.value.model = preset.configuration.model
-      formData.value.context_length = preset.configuration.contextLength
       formData.value.context_window = preset.configuration.contextWindow
       formData.value.hardware = preset.configuration.hardware || ''
       formData.value.data_center_provider = preset.configuration.dataCenterProvider || ''
@@ -531,22 +503,18 @@ const saveCalculation = async () => {
       updatePayload.input_without_cache = null
     }
     
-    // Only include context_length and context_window if they're explicitly set (not null)
+    // Only include context_window if it's explicitly set (not null)
     // If null, the API will use preset values
     if (isProjectDefault) {
       // For project default, explicitly set to null to clear any overrides
-      updatePayload.context_length = null
       updatePayload.context_window = null
-    } else if (formData.value.context_length !== null && formData.value.context_length !== undefined &&
-               formData.value.context_window !== null && formData.value.context_window !== undefined) {
+    } else if (formData.value.context_window !== null && formData.value.context_window !== undefined) {
       // Only include if explicitly set
-      updatePayload.context_length = formData.value.context_length
       updatePayload.context_window = formData.value.context_window
     } else {
-      // If preset selected but values not set, use preset values
+      // If preset selected but value not set, use preset value
       const preset = selectedPreset.value
       if (preset) {
-        updatePayload.context_length = preset.configuration.contextLength
         updatePayload.context_window = preset.configuration.contextWindow
       }
     }

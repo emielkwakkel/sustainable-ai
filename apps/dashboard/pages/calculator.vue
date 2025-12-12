@@ -85,7 +85,6 @@ const useDetailedTokens = ref(false)
 const formData = ref<TokenCalculatorFormData>({
   tokenCount: 1000,
   model: '', // Will be set when models are loaded from API
-  contextLength: 0, // Will be set from selected model
   contextWindow: 1250, // User-editable, actual processing amount
   hardware: 'nvidia-a100',
   dataCenterProvider: 'aws',
@@ -235,26 +234,19 @@ watch([aiModels, isLoadingModels], ([models, isLoading]) => {
     const firstModel = models[0]
     if (firstModel) {
       formData.value.model = firstModel.id
-      formData.value.contextLength = firstModel.contextLength
     }
   }
 }, { immediate: true })
 
-// Auto-update context length when model changes (for validation)
-watch(() => formData.value.model, (newModel: string) => {
-  if (!newModel) return
-  const selectedModel = aiModels.value.find(m => m.id === newModel || m.name === newModel)
-  if (selectedModel) {
-    // Set context length from model (used for validation, not displayed)
-    formData.value.contextLength = selectedModel.contextLength
-    // Context window is not auto-set - user must enter it manually per calculation
-  }
-})
-
 // Validate context window doesn't exceed model's context length
-watch([() => formData.value.contextWindow, selectedModelContextLength], ([window, maxLength]) => {
-  if (window && maxLength && window > maxLength) {
-    contextWindowError.value = `Context window cannot exceed model's maximum capacity of ${maxLength.toLocaleString()} tokens`
+watch([() => formData.value.contextWindow, () => formData.value.model], ([window, modelId]) => {
+  if (window && modelId) {
+    const selectedModel = aiModels.value.find(m => m.id === modelId || m.name === modelId)
+    if (selectedModel && selectedModel.contextLength && window > selectedModel.contextLength) {
+      contextWindowError.value = `Context window cannot exceed model's maximum capacity of ${selectedModel.contextLength.toLocaleString()} tokens`
+    } else {
+      contextWindowError.value = null
+    }
   } else {
     contextWindowError.value = null
   }

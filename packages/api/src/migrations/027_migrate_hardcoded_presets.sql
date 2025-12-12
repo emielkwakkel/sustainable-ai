@@ -15,7 +15,6 @@ SELECT
     jsonb_build_object(
         'tokenCount', 200,
         'model', (SELECT id::text FROM ai_models WHERE LOWER(name) = 'gpt-4' LIMIT 1),
-        'contextLength', 8000,
         'contextWindow', 1250,
         'hardware', 'nvidia-a100',
         'dataCenterProvider', 'aws',
@@ -36,7 +35,6 @@ SELECT
     jsonb_build_object(
         'tokenCount', 1000,
         'model', (SELECT id::text FROM ai_models WHERE LOWER(name) = 'gpt-4' LIMIT 1),
-        'contextLength', 8000,
         'contextWindow', 1250,
         'hardware', 'nvidia-h100',
         'dataCenterProvider', 'azure',

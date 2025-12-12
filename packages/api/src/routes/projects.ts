@@ -416,10 +416,9 @@ router.post('/:id/recalculate', async (req, res) => {
 
     // Recalculate each calculation
     for (const calc of calcResult.rows) {
-      // Use preset values for context_length and context_window
-      // If calculation has NULL context values, use preset; otherwise use stored values (they're overrides)
-      const usePresetContext = calc.context_length === null || calc.context_length === undefined ||
-                               calc.context_window === null || calc.context_window === undefined
+      // Use preset values for context_window
+      // If calculation has NULL context_window, use preset; otherwise use stored value (it's an override)
+      const usePresetContext = calc.context_window === null || calc.context_window === undefined
       
       // Determine customPue and customCarbonIntensity
       // If DB has NULL, use preset value (which may be undefined for region defaults)
@@ -433,7 +432,6 @@ router.post('/:id/recalculate', async (req, res) => {
       const formData: TokenCalculatorFormData = {
         tokenCount: calc.token_count,
         model: calc.model,
-        contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
         contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
         // Always use current preset values for hardware/provider/region when recalculating
         // This ensures consistency with the current preset configuration

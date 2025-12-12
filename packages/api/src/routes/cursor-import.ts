@@ -164,15 +164,15 @@ router.post('/import', async (req, res) => {
       for (const calc of calculations) {
         const result = await pool.query(`
           INSERT INTO calculations (
-            project_id, token_count, model, context_length, context_window,
+            project_id, token_count, model, context_window,
             hardware, data_center_provider, data_center_region, custom_pue,
             custom_carbon_intensity, calculation_parameters, cache_read,
             output_tokens, input_with_cache, input_without_cache, results
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
           RETURNING id
         `, [
-          calc.project_id, calc.token_count, calc.model, calc.context_length, calc.context_window,
+          calc.project_id, calc.token_count, calc.model, calc.context_window,
           calc.hardware, calc.data_center_provider, calc.data_center_region, calc.custom_pue,
           calc.custom_carbon_intensity, calc.calculation_parameters, calc.cache_read ?? null,
           calc.output_tokens ?? null, calc.input_with_cache ?? null, calc.input_without_cache ?? null, calc.results
@@ -285,7 +285,6 @@ async function convertUsageDataToCalculations(usageData: any[], projectId: strin
       const formData: TokenCalculatorFormData = {
         tokenCount: record.totalTokens || record.total_tokens || 0,
         model: modelId,
-        contextLength: preset.configuration.contextLength,
         contextWindow: preset.configuration.contextWindow,
         hardware: preset.configuration.hardware,
         dataCenterProvider: preset.configuration.dataCenterProvider,
@@ -313,7 +312,6 @@ async function convertUsageDataToCalculations(usageData: any[], projectId: strin
         project_id: projectId,
         token_count: formData.tokenCount,
         model: modelId,
-        context_length: formData.contextLength,
         context_window: formData.contextWindow,
         hardware: formData.hardware,
         data_center_provider: formData.dataCenterProvider,

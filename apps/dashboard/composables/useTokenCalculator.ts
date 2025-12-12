@@ -112,14 +112,16 @@ export const useTokenCalculator = () => {
       }
     }
 
-    // Validate context length
-    if (formData.contextLength < 1000 || formData.contextLength > 500000) {
-      errors.push('Context length must be between 1,000 and 500,000 tokens')
-    }
-
     // Validate context window
     // Maximum is the model's context length (maximum capacity), minimum is 100
-    const maxContextWindow = formData.contextLength || 2000 // Use model's context length if available, otherwise default to 2000
+    // Get model's contextLength from aiModels array for validation
+    let maxContextWindow = 2000 // Default fallback
+    if (formData.model) {
+      const selectedModel = aiModels.value.find(m => m.id === formData.model || m.name === formData.model)
+      if (selectedModel?.contextLength) {
+        maxContextWindow = selectedModel.contextLength
+      }
+    }
     if (formData.contextWindow < 100 || formData.contextWindow > maxContextWindow) {
       errors.push(`Context window must be between 100 and ${maxContextWindow.toLocaleString()} tokens (model's maximum capacity)`)
     }
