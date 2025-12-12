@@ -19,6 +19,13 @@
         </div>
         <div v-if="selectedCalculations.length > 0" class="flex items-center gap-2">
           <button
+            @click="showBulkUpdateModal = true"
+            class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            <Edit class="w-4 h-4" />
+            Update configuration
+          </button>
+          <button
             @click="showTagModal = true"
             class="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
           >
@@ -229,6 +236,16 @@
       </div>
     </div>
 
+    <!-- Bulk Update Modal -->
+    <BulkUpdateCalculationsModal
+      v-if="showBulkUpdateModal"
+      :calculation-ids="selectedCalculations"
+      :project-id="projectId"
+      :project-preset-id="projectPresetId"
+      @close="showBulkUpdateModal = false"
+      @updated="handleBulkUpdateCompleted"
+    />
+
     <!-- Tag Assignment Modal -->
     <TagAssignmentModal
       v-if="showTagModal"
@@ -255,6 +272,7 @@ import { ref, computed } from 'vue'
 import { Calculator, RefreshCw, Loader2, Trash2, Edit, Tag as TagIcon } from 'lucide-vue-next'
 import type { Calculation } from '~/types/watttime'
 import { formatCO2 } from '~/utils/formatting'
+import BulkUpdateCalculationsModal from './BulkUpdateCalculationsModal.vue'
 import TagAssignmentModal from './TagAssignmentModal.vue'
 import EditCalculationModal from './EditCalculationModal.vue'
 
@@ -281,6 +299,7 @@ const selectedCalculations = ref<string[]>([])
 const recalculating = ref(false)
 const deleting = ref(false)
 const showTagModal = ref(false)
+const showBulkUpdateModal = ref(false)
 const editingCalculation = ref<Calculation | null>(null)
 
 const allSelected = computed(() => {
@@ -465,6 +484,12 @@ const handleCalculationUpdated = () => {
 
 const handleTagsAssigned = () => {
   showTagModal.value = false
+  selectedCalculations.value = []
+  emit('recalculated')
+}
+
+const handleBulkUpdateCompleted = () => {
+  showBulkUpdateModal.value = false
   selectedCalculations.value = []
   emit('recalculated')
 }

@@ -10,7 +10,7 @@
     "typecheck": "nx type-check",
     "clean": "nx reset",
     "setup:certificates": "nx run dashboard:setup:certificates",
-    "setup:db": "nx run api:setup:db",
+    "setup:db": "npm run db:backup &&nx run api:setup:db",
     "db:backup": "tsx packages/api/src/backup-db.ts",
     "db:restore": "tsx packages/api/src/restore-db.ts"
   },

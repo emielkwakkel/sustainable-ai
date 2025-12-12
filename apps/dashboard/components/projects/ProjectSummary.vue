@@ -35,7 +35,7 @@
         <div>
           <p class="text-sm text-green-700 dark:text-green-300">{{ labelPrefix }} Tokens</p>
           <p class="text-2xl font-bold text-green-900 dark:text-green-200">
-            {{ totalTokens }}
+            {{ formatNumberWithDots(totalTokens) }}
           </p>
           <p class="text-xs text-green-600 dark:text-green-400 mt-1">
             Avg: {{ formatNumber(averageTokensPerTransaction) }} per transaction
@@ -77,7 +77,7 @@
 import { computed } from 'vue'
 import { TrendingUp, Zap, Calculator } from 'lucide-vue-next'
 import type { ProjectAnalytics, Calculation } from '~/types/watttime'
-import { formatCO2, formatEnergyWh } from '~/utils/formatting'
+import { formatCO2, formatEnergyWh, formatNumberWithDots } from '~/utils/formatting'
 
 interface Props {
   analytics: ProjectAnalytics | null
