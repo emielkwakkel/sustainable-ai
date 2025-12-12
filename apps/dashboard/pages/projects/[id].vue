@@ -34,7 +34,7 @@
           <div>
             <span class="text-gray-500 dark:text-gray-400">Model:</span>
             <span class="ml-2 font-medium text-gray-900 dark:text-white">
-              {{ currentPreset.configuration.model }}
+              {{ getModelName(currentPreset.configuration.model) }}
             </span>
           </div>
           <div>
@@ -151,7 +151,7 @@
                 <h4 class="font-medium text-gray-900 dark:text-white">{{ preset.name }}</h4>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ preset.description }}</p>
                 <div class="mt-2 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{{ preset.configuration.model }}</span>
+                  <span>{{ getModelName(preset.configuration.model) }}</span>
                   <span>•</span>
                   <span>{{ preset.configuration.hardware }}</span>
                   <span>•</span>
@@ -173,6 +173,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { Settings } from 'lucide-vue-next'
 import type { Calculation } from '~/types/watttime'
+import type { AIModel } from '@susai/types'
+import { fetchAIModels } from '@susai/config'
 import { useProject } from '../../composables/useProject'
 import { usePresets } from '~/composables/usePresets'
 import AddCalculationModal from '../../components/AddCalculationModal.vue'
@@ -193,9 +195,31 @@ const projectId = route.params.id as string
 const { project, analytics, calculations, totalCount, fetchProject, fetchCalculations } = useProject(projectId)
 const { presets, initialize: initializePresets } = usePresets()
 
-// Initialize presets on mount
+// Models state
+const models = ref<AIModel[]>([])
+
+// Fetch models on mount
+const fetchModels = async () => {
+  try {
+    const fetchedModels = await fetchAIModels()
+    models.value = fetchedModels
+  } catch (error) {
+    console.error('Error fetching models:', error)
+    models.value = []
+  }
+}
+
+// Helper function to get model name by ID
+const getModelName = (modelId: string): string => {
+  if (!modelId) return 'Unknown'
+  const model = models.value.find(m => m.id === modelId || m.name === modelId)
+  return model?.name || modelId
+}
+
+// Initialize presets and models on mount
 onMounted(() => {
   initializePresets()
+  fetchModels()
 })
 
 // Helper functions

@@ -1,64 +1,79 @@
 /**
  * Format CO2 emissions with appropriate units (mg, g, kg, t)
- * @param grams - CO2 emissions in grams
+ * @param grams - CO2 emissions in grams (can be number or string)
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted string with unit
  */
-export function formatCO2(grams: number, decimals: number = 2): string {
-  const absValue = Math.abs(grams)
+export function formatCO2(grams: number | string | null | undefined, decimals: number = 2): string {
+  // Convert to number, handling null/undefined/string inputs
+  const numGrams = typeof grams === 'string' ? parseFloat(grams) : (grams ?? 0)
+  if (isNaN(numGrams)) {
+    return '0 g CO₂'
+  }
+  const absValue = Math.abs(numGrams)
   
   if (absValue >= 1_000_000) {
     // 1000 kg = 1 t
-    const tons = grams / 1_000_000
+    const tons = numGrams / 1_000_000
     return `${tons.toFixed(decimals)} t CO₂`
   } else if (absValue >= 1000) {
     // 1000 g = 1 kg
-    const kilograms = grams / 1000
+    const kilograms = numGrams / 1000
     return `${kilograms.toFixed(decimals)} kg CO₂`
   } else if (absValue >= 1) {
-    return `${grams.toFixed(decimals)} g CO₂`
+    return `${numGrams.toFixed(decimals)} g CO₂`
   } else {
     // Less than 1 gram, use milligrams
-    const milligrams = grams * 1000
+    const milligrams = numGrams * 1000
     return `${milligrams.toFixed(decimals)} mg CO₂`
   }
 }
 
 /**
  * Format energy consumption in joules with appropriate units (J, kJ, MJ, GJ)
- * @param joules - Energy in joules
+ * @param joules - Energy in joules (can be number or string)
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted string with unit
  */
-export function formatEnergyJoules(joules: number, decimals: number = 2): string {
-  const absValue = Math.abs(joules)
+export function formatEnergyJoules(joules: number | string | null | undefined, decimals: number = 2): string {
+  // Convert to number, handling null/undefined/string inputs
+  const numJoules = typeof joules === 'string' ? parseFloat(joules) : (joules ?? 0)
+  if (isNaN(numJoules)) {
+    return '0 J'
+  }
+  const absValue = Math.abs(numJoules)
   
   if (absValue >= 1_000_000_000) {
     // 1000 MJ = 1 GJ
-    const gigajoules = joules / 1_000_000_000
+    const gigajoules = numJoules / 1_000_000_000
     return `${gigajoules.toFixed(decimals)} GJ`
   } else if (absValue >= 1_000_000) {
     // 1000 kJ = 1 MJ
-    const megajoules = joules / 1_000_000
+    const megajoules = numJoules / 1_000_000
     return `${megajoules.toFixed(decimals)} MJ`
   } else if (absValue >= 1000) {
     // 1000 J = 1 kJ
-    const kilojoules = joules / 1000
+    const kilojoules = numJoules / 1000
     return `${kilojoules.toFixed(decimals)} kJ`
   } else {
-    return `${joules.toFixed(decimals)} J`
+    return `${numJoules.toFixed(decimals)} J`
   }
 }
 
 /**
  * Format energy consumption in watt-hours with appropriate units (Wh, kWh, MWh, GWh)
- * @param joules - Energy in joules
+ * @param joules - Energy in joules (can be number or string)
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted string with unit
  */
-export function formatEnergyWh(joules: number, decimals: number = 2): string {
+export function formatEnergyWh(joules: number | string | null | undefined, decimals: number = 2): string {
+  // Convert to number, handling null/undefined/string inputs
+  const numJoules = typeof joules === 'string' ? parseFloat(joules) : (joules ?? 0)
+  if (isNaN(numJoules)) {
+    return '0 Wh'
+  }
   // Convert joules to Wh (1 Wh = 3600 J)
-  const watthours = joules / 3600
+  const watthours = numJoules / 3600
   const absValue = Math.abs(watthours)
 
   if (absValue >= 1_000_000) {
@@ -122,5 +137,14 @@ export function formatDuration(minutes: number, decimals: number = 1): string {
  */
 export function formatNumber(value: number): string {
   return value.toFixed(2)
+}
+
+/**
+ * Format a number with dots as thousand separators (European style)
+ * @param value - Number to format
+ * @returns Formatted string with dots (e.g., 156000123 → "156.000.123")
+ */
+export function formatNumberWithDots(value: number): string {
+  return value.toLocaleString('de-DE')
 }
 

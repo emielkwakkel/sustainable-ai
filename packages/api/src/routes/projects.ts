@@ -453,7 +453,6 @@ router.post('/:id/recalculate', async (req, res) => {
           dataCenterRegion: formData.dataCenterRegion,
           customPue: formData.customPue,
           customCarbonIntensity: formData.customCarbonIntensity,
-          contextLength: formData.contextLength,
           contextWindow: formData.contextWindow,
           presetId: projectPresetId
         })

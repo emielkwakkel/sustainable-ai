@@ -804,7 +804,6 @@ router.post('/bulk-recalculate', async (req, res) => {
       const formData: TokenCalculatorFormData = {
         tokenCount: totalTokenCount, // Use total tokens (sum), core will calculate weighted internally
         model: calc.model,
-        contextLength: usePresetContext ? preset.configuration.contextLength : calc.context_length,
         contextWindow: usePresetContext ? preset.configuration.contextWindow : calc.context_window,
         // Always use current preset values for hardware/provider/region when recalculating
         // This ensures consistency with the current preset configuration
@@ -876,6 +875,143 @@ router.post('/bulk-recalculate', async (req, res) => {
   } catch (error) {
     console.error('Error bulk recalculating:', error)
     res.status(500).json({ error: 'Failed to bulk recalculate calculations' })
+  }
+})
+
+// Bulk update calculations (preset and context window)
+router.post('/bulk-update', async (req, res) => {
+  try {
+    const { calculation_ids, user_id, preset_id, context_window } = req.body
+
+    if (!calculation_ids || !Array.isArray(calculation_ids) || !user_id) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'calculation_ids array and user_id are required' 
+      })
+    }
+
+    // Get all calculations with their project presets
+    const calcResult = await pool.query(`
+      SELECT c.*, p.calculation_preset_id
+      FROM calculations c
+      JOIN projects p ON c.project_id = p.id
+      WHERE c.id = ANY($1::INTEGER[]) AND p.user_id = $2
+    `, [calculation_ids, user_id])
+
+    if (calcResult.rows.length !== calculation_ids.length) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Some calculations not found or access denied' 
+      })
+    }
+
+    const updatedIds: number[] = []
+
+    // Determine which preset to use
+    let targetPreset: TokenCalculatorPreset | null = null
+    
+    if (preset_id !== undefined) {
+      if (preset_id === null) {
+        // Use project default preset - all calculations should have same project preset
+        // since they're from the same project (based on the component usage)
+        const firstCalc = calcResult.rows[0]
+        targetPreset = await fetchPresetFromDB(firstCalc.calculation_preset_id)
+      } else {
+        // Use specified preset
+        targetPreset = await fetchPresetFromDB(preset_id)
+      }
+      
+      if (!targetPreset) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Preset not found' 
+        })
+      }
+    }
+
+    // Update each calculation
+    for (const calc of calcResult.rows) {
+      let updateFields: any = {}
+
+      // If preset_id is provided, update model and other preset fields
+      if (preset_id !== undefined && targetPreset) {
+        updateFields.model = targetPreset.configuration.model
+        updateFields.hardware = targetPreset.configuration.hardware || null
+        updateFields.data_center_provider = targetPreset.configuration.dataCenterProvider || null
+        updateFields.data_center_region = targetPreset.configuration.dataCenterRegion || null
+        
+        // Determine context_window value
+        if (context_window !== undefined) {
+          // If context_window is explicitly provided (including null), use it
+          updateFields.context_window = context_window === null ? null : context_window
+        } else {
+          // If not provided, use preset's contextWindow
+          updateFields.context_window = targetPreset.configuration.contextWindow
+        }
+      } else if (context_window !== undefined) {
+        // Only context_window is being updated (no preset change)
+        updateFields.context_window = context_window === null ? null : context_window
+      } else {
+        // Nothing to update
+        continue
+      }
+
+      // Build UPDATE query dynamically
+      const setClauses: string[] = []
+      const values: any[] = []
+      let paramIndex = 1
+
+      if (updateFields.model !== undefined) {
+        setClauses.push(`model = $${paramIndex++}`)
+        values.push(updateFields.model)
+      }
+      if (updateFields.hardware !== undefined) {
+        setClauses.push(`hardware = $${paramIndex++}`)
+        values.push(updateFields.hardware)
+      }
+      if (updateFields.data_center_provider !== undefined) {
+        setClauses.push(`data_center_provider = $${paramIndex++}`)
+        values.push(updateFields.data_center_provider)
+      }
+      if (updateFields.data_center_region !== undefined) {
+        setClauses.push(`data_center_region = $${paramIndex++}`)
+        values.push(updateFields.data_center_region)
+      }
+      if (updateFields.context_window !== undefined) {
+        setClauses.push(`context_window = $${paramIndex++}`)
+        values.push(updateFields.context_window)
+      }
+
+      // Always update updated_at
+      setClauses.push(`updated_at = NOW()`)
+      
+      // Add calculation ID as last parameter
+      values.push(calc.id)
+
+      if (setClauses.length > 1) { // More than just updated_at
+        await pool.query(`
+          UPDATE calculations 
+          SET ${setClauses.join(', ')}
+          WHERE id = $${paramIndex}
+        `, values)
+
+        updatedIds.push(calc.id)
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      data: { 
+        updatedCount: updatedIds.length,
+        calculationIds: updatedIds
+      }
+    })
+  } catch (error) {
+    console.error('Error bulk updating calculations:', error)
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to bulk update calculations' 
+    })
   }
 })
 

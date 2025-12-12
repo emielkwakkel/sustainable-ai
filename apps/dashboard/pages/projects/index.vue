@@ -56,7 +56,7 @@
             <div class="flex items-center justify-between">
               <span class="text-sm text-red-700 dark:text-red-300">Total CO₂</span>
               <span class="text-lg font-bold text-red-900 dark:text-red-200">
-                {{ formatNumber(project.total_emissions_grams || 0, 2) }}g
+                {{ formatCO2(project.total_emissions_grams || 0) }}
               </span>
             </div>
           </div>
@@ -66,7 +66,7 @@
             <div class="flex items-center justify-between">
               <span class="text-sm text-blue-700 dark:text-blue-300">Total Energy</span>
               <span class="text-lg font-bold text-blue-900 dark:text-blue-200">
-                {{ formatNumber((project.total_energy_joules || 0) / 3600000, 4) }}kWh
+                {{ formatEnergyWh(project.total_energy_joules || 0) }}
               </span>
             </div>
           </div>
@@ -129,6 +129,7 @@ import { Plus, Edit, Trash2, FolderPlus } from 'lucide-vue-next'
 import type { Project } from '~/types/watttime'
 import { useProjects } from '~/composables/useProjects'
 import { usePresets } from '~/composables/usePresets'
+import { formatCO2, formatEnergyWh } from '~/utils/formatting'
 import CreateProjectModal from '~/components/CreateProjectModal.vue'
 import EditProjectModal from '~/components/EditProjectModal.vue'
 
@@ -188,18 +189,6 @@ const handleProjectUpdated = async () => {
   showEditProjectModal.value = false
   selectedProject.value = null
   await fetchProjects()
-}
-
-const formatNumber = (value: number | string | null | undefined, decimals: number = 2): string => {
-  if (value === null || value === undefined) {
-    return '0'
-  }
-  // Convert string to number if needed
-  const numValue = typeof value === 'string' ? parseFloat(value) : value
-  if (isNaN(numValue)) {
-    return '0'
-  }
-  return numValue.toFixed(decimals)
 }
 
 const formatDate = (dateString: string): string => {
