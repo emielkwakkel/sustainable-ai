@@ -13,5 +13,8 @@ export * from './presets'
 // Export pricing configuration
 export * from './pricing'
 
+// Export regions configuration
+export * from './regions'
+
 // Export utilities
 export * from './utils/browser'

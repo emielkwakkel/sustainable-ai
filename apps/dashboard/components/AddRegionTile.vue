@@ -35,12 +35,8 @@
             :key="region.code"
             @click="selectRegion(region)"
             class="w-full text-left px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            :disabled="isRegionSelected(region.code)"
           >
             <div class="font-medium">{{ region.name }}</div>
-            <div v-if="region.description" class="text-xs text-gray-600 dark:text-gray-400">
-              {{ region.description }}
-            </div>
           </button>
         </div>
       </div>
@@ -67,14 +63,19 @@ const showDropdown = ref(false)
 const searchQuery = ref('')
 
 const filteredRegions = computed(() => {
-  if (!searchQuery.value) return props.availableRegions
+  // First filter by search query
+  let filtered = props.availableRegions
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = props.availableRegions.filter(region => 
+      region.name.toLowerCase().includes(query) ||
+      region.description?.toLowerCase().includes(query) ||
+      region.code.toLowerCase().includes(query)
+    )
+  }
   
-  const query = searchQuery.value.toLowerCase()
-  return props.availableRegions.filter(region => 
-    region.name.toLowerCase().includes(query) ||
-    region.description?.toLowerCase().includes(query) ||
-    region.code.toLowerCase().includes(query)
-  )
+  // Then exclude already selected regions
+  return filtered.filter(region => !props.selectedRegions.includes(region.code))
 })
 
 const toggleDropdown = () => {
@@ -87,10 +88,6 @@ const selectRegion = (region: AvailableRegion) => {
   emit('addRegion', region)
   showDropdown.value = false
   searchQuery.value = ''
-}
-
-const isRegionSelected = (code: string) => {
-  return props.selectedRegions.includes(code)
 }
 
 // Close dropdown when clicking outside
