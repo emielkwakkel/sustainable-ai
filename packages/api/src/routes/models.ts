@@ -283,13 +283,6 @@ router.delete('/:id', async (req, res) => {
       })
     }
 
-    if (existingCheck.rows[0].is_system) {
-      return res.status(403).json({
-        success: false,
-        error: 'Cannot delete system models'
-      })
-    }
-
     await pool.query('DELETE FROM ai_models WHERE id = $1', [id])
 
     res.json({

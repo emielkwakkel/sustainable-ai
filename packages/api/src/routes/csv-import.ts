@@ -1,8 +1,7 @@
 import { Router } from 'express'
 import { Pool } from 'pg'
 import { sustainableAICalculator } from '@susai/core'
-import type { TokenCalculatorFormData } from '@susai/types'
-import { getPresetById } from '@susai/config'
+import type { TokenCalculatorFormData, TokenCalculatorPreset } from '@susai/types'
 import { fetchModelFromDB } from '../services/modelService'
 
 const router = Router()
@@ -15,6 +14,37 @@ const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
 })
+
+// Helper function to fetch preset from database
+async function fetchPresetFromDB(presetId: string): Promise<TokenCalculatorPreset | null> {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, name, description, configuration, user_id,
+        created_at, updated_at
+      FROM presets
+      WHERE id = $1
+    `, [presetId])
+
+    if (result.rows.length === 0) {
+      return null
+    }
+
+    const row = result.rows[0]
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description || undefined,
+      configuration: row.configuration as TokenCalculatorFormData,
+      userId: row.user_id || undefined,
+      createdAt: row.created_at.toISOString(),
+      updatedAt: row.updated_at.toISOString()
+    }
+  } catch (error) {
+    console.error('Error fetching preset from database:', error)
+    return null
+  }
+}
 
 interface CSVRow {
   Date: string
@@ -100,7 +130,7 @@ async function convertCSVRowToCalculation(
   }
 
   // Get preset configuration
-  const preset = getPresetById(projectPresetId)
+  const preset = await fetchPresetFromDB(projectPresetId)
   if (!preset) {
     throw new Error(`Preset not found: ${projectPresetId}`)
   }

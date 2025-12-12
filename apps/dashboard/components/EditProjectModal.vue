@@ -56,16 +56,9 @@
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a preset</option>
-              <optgroup label="Default Presets">
-                <option v-for="preset in defaultPresets" :key="preset.id" :value="preset.id">
-                  {{ preset.name }}
-                </option>
-              </optgroup>
-              <optgroup v-if="customPresets.length > 0" label="Custom Presets">
-                <option v-for="preset in customPresets" :key="preset.id" :value="preset.id">
-                  {{ preset.name }}
-                </option>
-              </optgroup>
+              <option v-for="preset in presets" :key="preset.id" :value="preset.id">
+                {{ preset.name }}
+              </option>
             </select>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               This preset will be used for all calculations in this project
@@ -123,7 +116,12 @@ const emit = defineEmits<{
 
 // Composables
 const { updateProject } = useProjects()
-const { defaultPresets, customPresets } = usePresets()
+const { presets, initialize: initializePresets } = usePresets()
+
+// Initialize presets on mount
+onMounted(() => {
+  initializePresets()
+})
 
 // State
 const formData = ref({

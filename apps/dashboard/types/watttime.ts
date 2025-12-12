@@ -254,7 +254,7 @@ export interface CalculationResult {
 
 export interface TokenCalculatorFormData {
   tokenCount: number
-  model: string
+  model: string // UUID of the AI model
   contextLength: number
   contextWindow: number
   hardware: string
@@ -274,23 +274,24 @@ export interface TokenCalculatorFormData {
 export interface TokenCalculatorPreset {
   id: string
   name: string
-  isDefault: boolean
   description?: string
   configuration: TokenCalculatorFormData
+  userId?: string
+  isSystem?: boolean // whether this is a system preset (user_id IS NULL)
   createdAt: string
   updatedAt: string
 }
 
 export interface PresetManager {
   presets: Ref<TokenCalculatorPreset[]>
-  defaultPresets: ComputedRef<TokenCalculatorPreset[]>
-  customPresets: ComputedRef<TokenCalculatorPreset[]>
-  savePreset: (name: string, description: string, configuration: TokenCalculatorFormData) => string
+  savePreset: (name: string, description: string, configuration: TokenCalculatorFormData) => Promise<string>
   loadPreset: (id: string) => TokenCalculatorFormData | null
-  deletePreset: (id: string) => boolean
-  updatePreset: (id: string, name: string, description: string, configuration: TokenCalculatorFormData) => boolean
-  exportPresets: () => string
-  importPresets: (data: string) => boolean
+  deletePreset: (id: string) => Promise<boolean>
+  updatePreset: (id: string, name: string, description: string, configuration: TokenCalculatorFormData) => Promise<boolean>
+  fetchPresets: () => Promise<void>
+  initialize: () => Promise<void>
+  loading: Ref<boolean>
+  error: Ref<string | null>
 }
 
 // Projects Types

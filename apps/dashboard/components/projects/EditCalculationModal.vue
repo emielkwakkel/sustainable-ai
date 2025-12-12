@@ -229,11 +229,16 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { presets } = usePresets()
+const { presets, initialize: initializePresets } = usePresets()
 const { calculateWeightedTokens } = useTokenCalculator()
 
 const getAllPresets = () => presets.value
 const getPresetById = (id: string) => presets.value.find(p => p.id === id)
+
+// Initialize presets on mount
+onMounted(() => {
+  initializePresets()
+})
 
 const allPresets = computed(() => getAllPresets())
 

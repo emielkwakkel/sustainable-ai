@@ -110,9 +110,9 @@ const intensityColor = computed(() => {
   
   const percentile = props.region.moer
   
-  if (percentile <= 33) return 'red'
+  if (percentile <= 33) return 'green'
   if (percentile <= 66) return 'orange'
-  return 'green'
+  return 'red'
 })
 
 const intensityLevel = computed(() => {
@@ -120,9 +120,9 @@ const intensityLevel = computed(() => {
   
   const percentile = props.region.moer
   
-  if (percentile <= 33) return 'High carbon intensity'
+  if (percentile <= 33) return 'Low carbon intensity'
   if (percentile <= 66) return 'Moderate carbon intensity'
-  return 'Low carbon intensity'
+  return 'High carbon intensity'
 })
 
 const formatTime = (timestamp: string) => {

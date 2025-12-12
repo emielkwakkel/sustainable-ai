@@ -1,6 +1,9 @@
 import type { TokenCalculatorFormData } from '@susai/types'
 
-// Project preset interface (simplified version for API use)
+/**
+ * @deprecated This interface is kept for backward compatibility during transition.
+ * Presets are now stored in the database. Use the API endpoints instead.
+ */
 export interface ProjectPreset {
   id: string
   name: string
@@ -8,43 +11,19 @@ export interface ProjectPreset {
   configuration: TokenCalculatorFormData
 }
 
-// Default project presets
-export const projectPresets: ProjectPreset[] = [
-  {
-    id: 'gpt-4-research',
-    name: 'GPT-4 Token Research',
-    description: 'Based on Anu\'s Substack article "We can use tokens to track AI\'s carbon"',
-    configuration: {
-      tokenCount: 200,
-      model: 'gpt-4',
-      contextLength: 8000,
-      contextWindow: 1250,
-      hardware: 'nvidia-a100',
-      dataCenterProvider: 'aws',
-      dataCenterRegion: 'aws-asia-pacific-tokyo',
-      customPue: 1.1,
-      customCarbonIntensity: undefined,
-    },
-  },
-  {
-    id: 'cursor-ai',
-    name: 'Cursor.ai',
-    description: 'Based on Cursor\'s actual infrastructure as reported in The Pragmatic Engineer',
-    configuration: {
-      tokenCount: 1000,
-      model: 'gpt-4',
-      contextLength: 8000,
-      contextWindow: 1250,
-      hardware: 'nvidia-h100',
-      dataCenterProvider: 'azure',
-      dataCenterRegion: 'azure-virginia',
-      customPue: undefined,
-      customCarbonIntensity: undefined,
-    },
-  },
-]
+/**
+ * @deprecated Presets are now stored in the database.
+ * Use GET /api/presets endpoint instead.
+ * This export will be removed in a future version.
+ */
+export const projectPresets: ProjectPreset[] = []
 
+/**
+ * @deprecated Use GET /api/presets/:id endpoint instead.
+ * This function will be removed in a future version.
+ */
 export const getPresetById = (id: string): ProjectPreset | undefined => {
-  return projectPresets.find(preset => preset.id === id)
+  console.warn('getPresetById is deprecated. Use GET /api/presets/:id endpoint instead.')
+  return undefined
 }
 

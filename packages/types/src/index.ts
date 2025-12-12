@@ -198,7 +198,7 @@ export interface CalculationResult {
 
 export interface TokenCalculatorFormData {
   tokenCount: number
-  model: string
+  model: string // UUID of the AI model
   contextLength: number
   contextWindow: number
   hardware: string
@@ -219,9 +219,9 @@ export interface TokenCalculatorFormData {
 export interface TokenCalculatorPreset {
   id: string
   name: string
-  isDefault: boolean
   description?: string
   configuration: TokenCalculatorFormData
+  userId?: string
   createdAt: string
   updatedAt: string
 }

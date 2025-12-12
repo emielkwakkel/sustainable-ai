@@ -77,8 +77,13 @@ const emit = defineEmits<{
 
 // Composables
 const { calculateEmissions, validateFormData, calculateWeightedTokens, aiModels, isLoadingModels } = useTokenCalculator()
-const { presets, loadPreset } = usePresets()
+const { presets, loadPreset, initialize } = usePresets()
 const { addCalculation } = useProject(props.projectId)
+
+// Initialize presets on mount
+onMounted(() => {
+  initialize()
+})
 
 // Helper function
 const getPresetConfiguration = (presetId: string) => {
