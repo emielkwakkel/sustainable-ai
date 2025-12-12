@@ -222,6 +222,7 @@ export interface TokenCalculatorPreset {
   description?: string
   configuration: TokenCalculatorFormData
   userId?: string
+  isSystem?: boolean // whether this is a system preset (user_id IS NULL)
   createdAt: string
   updatedAt: string
 }

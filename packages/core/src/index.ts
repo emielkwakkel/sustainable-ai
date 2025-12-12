@@ -99,11 +99,29 @@ export class SustainableAICalculator implements CalculationEngine {
     const complexityAdjustedEnergyKwh = baseEnergyPerTokenKwh * model.complexityFactor
     
     // Apply context window adjustment
-    // Formula from research paper: (actual_window / GPT-3_baseline_window)²
-    // GPT-3's context window is 2048 tokens (the baseline for energy calculations)
-    const GPT3_BASELINE_CONTEXT_WINDOW = 2048
-    const contextWindowFactor = Math.pow(params.contextWindow / GPT3_BASELINE_CONTEXT_WINDOW, 2)
-    const contextAdjustedEnergyKwh = complexityAdjustedEnergyKwh * contextWindowFactor
+    // IMPORTANT: When using weighted tokens (detailed token breakdown), we skip context window adjustment
+    // because weighted tokens already account for processing complexity and overhead.
+    // Applying context window adjustment on top of weighted tokens would double-count overhead,
+    // leading to unrealistic energy calculations (e.g., 2.41 t CO₂ for a single prompt).
+    //
+    // The context window adjustment from the research paper was designed for simple token counts,
+    // where the quadratic formula accounts for attention mechanism overhead scaling with context size.
+    // With weighted tokens, this overhead is already reflected in the token weights:
+    // - Cache reads have minimal weight (0.001) because they don't require attention processing
+    // - Input tokens have standard weight (1.0) because they require attention
+    // - Output tokens have higher weight (5.0) because generation is more energy-intensive
+    //
+    // For calculations without detailed tokens, we still apply context window adjustment as per research paper.
+    let contextAdjustedEnergyKwh = complexityAdjustedEnergyKwh
+    
+    if (!shouldUseDetailedTokens) {
+      // Apply context window adjustment only when NOT using weighted tokens
+      // Formula from research paper: (actual_window / GPT-3_baseline_window)²
+      // GPT-3's context window is 2048 tokens (the baseline for energy calculations)
+      const GPT3_BASELINE_CONTEXT_WINDOW = 2048
+      const contextWindowFactor = Math.pow(params.contextWindow / GPT3_BASELINE_CONTEXT_WINDOW, 2)
+      contextAdjustedEnergyKwh = complexityAdjustedEnergyKwh * contextWindowFactor
+    }
     
     // Apply PUE adjustment
     const adjustedEnergyPerTokenKwh = contextAdjustedEnergyKwh * pue

@@ -139,7 +139,12 @@ useHead({
 
 // Composables
 const { projects, fetchProjects, deleteProject: deleteProjectApi } = useProjects()
-const { presets } = usePresets()
+const { presets, initialize: initializePresets } = usePresets()
+
+// Initialize presets on mount
+onMounted(() => {
+  initializePresets()
+})
 
 // Helper function
 const getPresetName = (presetId: string): string => {

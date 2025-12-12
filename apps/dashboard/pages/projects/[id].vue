@@ -191,7 +191,12 @@ const projectId = route.params.id as string
 
 // Composables
 const { project, analytics, calculations, totalCount, fetchProject, fetchCalculations } = useProject(projectId)
-const { presets } = usePresets()
+const { presets, initialize: initializePresets } = usePresets()
+
+// Initialize presets on mount
+onMounted(() => {
+  initializePresets()
+})
 
 // Helper functions
 const getPresetById = (id: string) => {

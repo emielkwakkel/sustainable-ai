@@ -90,7 +90,7 @@
                 <input
                   v-model.number="formData.tokenWeights.inputWithCache"
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="1.25"
                 />
@@ -100,7 +100,7 @@
                 <input
                   v-model.number="formData.tokenWeights.inputWithoutCache"
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="1.00"
                 />
@@ -110,7 +110,7 @@
                 <input
                   v-model.number="formData.tokenWeights.cacheRead"
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="0.10"
                 />
@@ -120,7 +120,7 @@
                 <input
                   v-model.number="formData.tokenWeights.outputTokens"
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="5.00"
                 />

@@ -196,6 +196,35 @@ export const usePresets = (): PresetManager => {
       if (stored) {
         const parsed = JSON.parse(stored) as TokenCalculatorPreset[]
         
+        // Fetch models to convert model names to UUIDs
+        let models: any[] = []
+        try {
+          const apiBaseUrl = process.env.NODE_ENV === 'development' ? 'https://localhost:3001' : window.location.origin
+          const modelsResponse = await fetch(`${apiBaseUrl}/api/config/models`)
+          const modelsData = await modelsResponse.json()
+          if (modelsData.success && modelsData.data) {
+            models = modelsData.data
+          }
+        } catch (err) {
+          console.warn('Failed to fetch models for migration, will try to migrate presets as-is:', err)
+        }
+        
+        // Helper function to convert model name to UUID
+        const convertModelToUUID = (modelId: string): string => {
+          // If it's already a UUID, return as-is
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(modelId)) {
+            return modelId
+          }
+          
+          // Try to find model by name (case-insensitive)
+          const model = models.find(m => 
+            m.id === modelId || 
+            m.name?.toLowerCase() === modelId.toLowerCase()
+          )
+          
+          return model?.id || modelId // Return UUID if found, otherwise return original (will fail validation)
+        }
+        
         // Migrate each preset to database
         for (const preset of parsed) {
           // Skip if it's marked as default (these are now system presets)
@@ -204,7 +233,13 @@ export const usePresets = (): PresetManager => {
           }
 
           try {
-            await savePreset(preset.name, preset.description || '', preset.configuration)
+            // Convert model name to UUID if needed
+            const migratedConfiguration = {
+              ...preset.configuration,
+              model: convertModelToUUID(preset.configuration.model)
+            }
+            
+            await savePreset(preset.name, preset.description || '', migratedConfiguration)
           } catch (err) {
             console.error(`Failed to migrate preset ${preset.name}:`, err)
             // Continue with other presets even if one fails
@@ -223,11 +258,11 @@ export const usePresets = (): PresetManager => {
     }
   }
 
-  // Initialize: fetch presets and migrate localStorage if needed
-  onMounted(async () => {
+  // Initialize function to be called by components
+  const initialize = async () => {
     await fetchPresets()
     await migrateLocalStoragePresets()
-  })
+  }
 
   return {
     presets,
@@ -236,6 +271,7 @@ export const usePresets = (): PresetManager => {
     deletePreset,
     updatePreset,
     fetchPresets,
+    initialize,
     loading,
     error
   }

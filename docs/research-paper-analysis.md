@@ -45,6 +45,7 @@ Our token calculator correctly implements the research paper's methodology:
 3. **Context Window Adjustment**: 
    - GPT-4 with 1250 token window: 0.372 factor (from research)
    - Other models: Square root scaling
+   - **Weighted Tokens Optimization**: For calculations using weighted tokens (detailed token breakdown), we skip context window adjustment entirely because weighted tokens already account for processing complexity and overhead. Applying context adjustment on top would double-count overhead. See [Context Window Adjustment](./context-window-adjustment.md) for details.
 4. **PUE Adjustment**: Context-adjusted energy × PUE
 5. **Carbon Calculation**: Final energy × Carbon intensity
 
