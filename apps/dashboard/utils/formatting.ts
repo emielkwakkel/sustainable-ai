@@ -152,3 +152,35 @@ export function formatNumberWithDots(value: number): string {
   return value.toLocaleString('de-DE')
 }
 
+/**
+ * Format cost/currency with appropriate units ($0.00, $1.23, $1.23K, $1.23M, $1.23B)
+ * @param cost - Cost in dollars (can be number or string)
+ * @param decimals - Number of decimal places (default: 2)
+ * @returns Formatted string with currency symbol
+ */
+export function formatCost(cost: number | string | null | undefined, decimals: number = 2): string {
+  // Convert to number, handling null/undefined/string inputs
+  const numCost = typeof cost === 'string' ? parseFloat(cost) : (cost ?? 0)
+  if (isNaN(numCost)) {
+    return '$0.00'
+  }
+  const absValue = Math.abs(numCost)
+  
+  if (absValue >= 1_000_000_000) {
+    // 1 billion or more
+    const billions = numCost / 1_000_000_000
+    return `$${billions.toFixed(decimals)}B`
+  } else if (absValue >= 1_000_000) {
+    // 1 million or more
+    const millions = numCost / 1_000_000
+    return `$${millions.toFixed(decimals)}M`
+  } else if (absValue >= 1000) {
+    // 1 thousand or more
+    const thousands = numCost / 1000
+    return `$${thousands.toFixed(decimals)}K`
+  } else {
+    // Less than 1000
+    return `$${numCost.toFixed(decimals)}`
+  }
+}
+

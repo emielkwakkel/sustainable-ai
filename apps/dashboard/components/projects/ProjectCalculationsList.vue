@@ -130,6 +130,9 @@
               <p class="text-sm text-gray-500 dark:text-gray-400">
                 {{ formatEnergyWh(calculation.results.energyJoules) }}
               </p>
+              <p v-if="getCost(calculation) > 0" class="text-sm font-medium text-green-600 dark:text-green-400">
+                {{ formatCost(getCost(calculation)) }}
+              </p>
             </div>
             <div class="flex items-center gap-1">
               <button
@@ -271,7 +274,7 @@
 import { ref, computed } from 'vue'
 import { Calculator, RefreshCw, Loader2, Trash2, Edit, Tag as TagIcon } from 'lucide-vue-next'
 import type { Calculation } from '~/types/watttime'
-import { formatCO2 } from '~/utils/formatting'
+import { formatCO2, formatEnergyWh, formatCost } from '~/utils/formatting'
 import BulkUpdateCalculationsModal from './BulkUpdateCalculationsModal.vue'
 import TagAssignmentModal from './TagAssignmentModal.vue'
 import EditCalculationModal from './EditCalculationModal.vue'
@@ -513,5 +516,9 @@ const hasTokenBreakdown = (calculation: Calculation): boolean => {
     (calculation.cache_read !== undefined && calculation.cache_read !== null) ||
     (calculation.output_tokens !== undefined && calculation.output_tokens !== null)
   )
+}
+
+const getCost = (calculation: Calculation): number => {
+  return calculation.calculation_parameters?.cost ?? 0
 }
 </script>

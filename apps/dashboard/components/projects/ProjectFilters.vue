@@ -1,17 +1,28 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
-      <button
-        v-if="hasActiveFilters"
-        @click="clearFilters"
-        class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-      >
-        Clear All Filters
-      </button>
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div 
+      class="p-6 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+      @click="collapsed = !collapsed"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Filters</h2>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="hasActiveFilters"
+            @click.stop="clearFilters"
+            class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+          >
+            Clear All Filters
+          </button>
+          <ChevronDown 
+            :class="['w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform', collapsed && 'rotate-180']"
+          />
+        </div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div v-show="!collapsed" class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Date Range -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -69,11 +80,13 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { ChevronDown } from 'lucide-vue-next'
 import type { Tag } from '~/types/watttime'
 
 interface Props {
@@ -92,6 +105,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const collapsed = ref(false)
 const availableTags = ref<Tag[]>([])
 const loadingTags = ref(false)
 const localStartDate = ref(props.startDate || '')

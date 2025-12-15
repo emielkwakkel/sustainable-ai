@@ -1,38 +1,104 @@
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Emissions Over Time Chart -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          CO₂ Emissions Over Time
-        </h3>
-        <div ref="emissionsChartRef" class="h-64"></div>
+    <!-- Costs Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div 
+        class="p-6 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        @click="costsCollapsed = !costsCollapsed"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Costs</h2>
+          <ChevronDown 
+            :class="['w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform', costsCollapsed && 'rotate-180']"
+          />
+        </div>
       </div>
+      <div v-show="!costsCollapsed" class="p-6 space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Costs Over Time Chart -->
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Costs Over Time
+            </h3>
+            <div ref="costChartRef" class="h-64"></div>
+          </div>
 
-      <!-- Energy Consumption Chart -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Energy Consumption Over Time
-        </h3>
-        <div ref="energyChartRef" class="h-64"></div>
+          <!-- Costs per Tag Chart -->
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Costs per Tag
+            </h3>
+            <div ref="costPerTagChartRef" class="h-64"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- CO2 Emissions per Tag Chart -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          CO₂ Emissions per Tag
-        </h3>
-        <div ref="emissionsPerTagChartRef" class="h-64"></div>
+    <!-- CO₂ Emissions Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div 
+        class="p-6 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        @click="emissionsCollapsed = !emissionsCollapsed"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">CO₂ Emissions</h2>
+          <ChevronDown 
+            :class="['w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform', emissionsCollapsed && 'rotate-180']"
+          />
+        </div>
       </div>
+      <div v-show="!emissionsCollapsed" class="p-6 space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Emissions Over Time Chart -->
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              CO₂ Emissions Over Time
+            </h3>
+            <div ref="emissionsChartRef" class="h-64"></div>
+          </div>
 
-      <!-- Energy Consumption per Tag Chart -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Energy Consumption per Tag
-        </h3>
-        <div ref="energyPerTagChartRef" class="h-64"></div>
+          <!-- CO2 Emissions per Tag Chart -->
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              CO₂ Emissions per Tag
+            </h3>
+            <div ref="emissionsPerTagChartRef" class="h-64"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Energy Consumption Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div 
+        class="p-6 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        @click="energyCollapsed = !energyCollapsed"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Energy Consumption</h2>
+          <ChevronDown 
+            :class="['w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform', energyCollapsed && 'rotate-180']"
+          />
+        </div>
+      </div>
+      <div v-show="!energyCollapsed" class="p-6 space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Energy Consumption Over Time Chart -->
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Energy Consumption Over Time
+            </h3>
+            <div ref="energyChartRef" class="h-64"></div>
+          </div>
+
+          <!-- Energy Consumption per Tag Chart -->
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Energy Consumption per Tag
+            </h3>
+            <div ref="energyPerTagChartRef" class="h-64"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -41,6 +107,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import * as d3 from 'd3'
+import { ChevronDown } from 'lucide-vue-next'
 import type { Calculation, Tag } from '~/types/watttime'
 
 interface Props {
@@ -49,15 +116,29 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// Collapsible section states
+const costsCollapsed = ref(false)
+const emissionsCollapsed = ref(false)
+const energyCollapsed = ref(false)
+
+const costChartRef = ref<HTMLElement | null>(null)
+const costPerTagChartRef = ref<HTMLElement | null>(null)
 const emissionsChartRef = ref<HTMLElement | null>(null)
 const energyChartRef = ref<HTMLElement | null>(null)
 const emissionsPerTagChartRef = ref<HTMLElement | null>(null)
 const energyPerTagChartRef = ref<HTMLElement | null>(null)
 
+let costChart: any = null
+let costPerTagChart: any = null
 let emissionsChart: any = null
 let energyChart: any = null
 let emissionsPerTagChart: any = null
 let energyPerTagChart: any = null
+
+// Helper function to extract cost from calculation
+const getCost = (calculation: Calculation): number => {
+  return calculation.calculation_parameters?.cost ?? 0
+}
 
 function renderEmissionsChart() {
   if (!emissionsChartRef.value || props.calculations.length === 0) return
@@ -573,15 +654,297 @@ function renderEnergyPerTagChart() {
   energyPerTagChart = { svg, g }
 }
 
+function renderCostChart() {
+  if (!costChartRef.value || props.calculations.length === 0) return
+
+  // Clear existing chart
+  d3.select(costChartRef.value).selectAll('*').remove()
+
+  const margin = { top: 20, right: 20, bottom: 40, left: 60 }
+  const width = costChartRef.value.clientWidth - margin.left - margin.right
+  const height = 256 - margin.top - margin.bottom
+
+  const svg = d3
+    .select(costChartRef.value)
+    .append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+
+  const g = svg
+    .append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`)
+
+  // Prepare data - group by 6-hour intervals
+  const rawData = props.calculations
+    .map((calc) => ({
+      date: new Date(calc.created_at),
+      value: getCost(calc),
+    }))
+    .filter(item => item.value > 0) // Only include calculations with cost data
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+
+  if (rawData.length === 0) return
+
+  // Group data by 6-hour intervals
+  const groupedData = new Map<string, { date: Date; value: number; count: number }>()
+  
+  rawData.forEach((item) => {
+    // Round down to nearest 6-hour interval
+    const date = new Date(item.date)
+    const hours = date.getHours()
+    const roundedHours = Math.floor(hours / 6) * 6
+    const roundedDate = new Date(date)
+    roundedDate.setHours(roundedHours, 0, 0, 0)
+    
+    const key = roundedDate.toISOString()
+    const existing = groupedData.get(key)
+    
+    if (existing) {
+      existing.value += item.value
+      existing.count += 1
+    } else {
+      groupedData.set(key, {
+        date: roundedDate,
+        value: item.value,
+        count: 1
+      })
+    }
+  })
+  
+  const data = Array.from(groupedData.values())
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+
+  const xScale = d3
+    .scaleTime()
+    .domain(d3.extent(data, (d) => d.date) as [Date, Date])
+    .range([0, width])
+
+  const yScale = d3
+    .scaleLinear()
+    .domain([0, d3.max(data, (d) => d.value) || 0])
+    .nice()
+    .range([height, 0])
+
+  // Line generator
+  const line = d3
+    .line<{ date: Date; value: number }>()
+    .x((d) => xScale(d.date))
+    .y((d) => yScale(d.value))
+    .curve(d3.curveMonotoneX)
+
+  // Add line
+  g.append('path')
+    .datum(data)
+    .attr('fill', 'none')
+    .attr('stroke', '#10b981')
+    .attr('stroke-width', 2)
+    .attr('d', line)
+
+  // Add dots
+  g.selectAll('circle')
+    .data(data)
+    .enter()
+    .append('circle')
+    .attr('cx', (d) => xScale(d.date))
+    .attr('cy', (d) => yScale(d.value))
+    .attr('r', 4)
+    .attr('fill', '#10b981')
+
+  // Add axes
+  const dateFormat = d3.timeFormat('%b %d %H:00')
+  const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(dateFormat as any)
+  const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d => `$${d}`)
+
+  g.append('g')
+    .attr('transform', `translate(0,${height})`)
+    .call(xAxis)
+    .selectAll('text')
+    .style('fill', '#6b7280')
+
+  g.append('g').call(yAxis).selectAll('text').style('fill', '#6b7280')
+
+  // Add axis labels
+  g.append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('y', 0 - margin.left)
+    .attr('x', 0 - height / 2)
+    .attr('dy', '1em')
+    .style('text-anchor', 'middle')
+    .style('fill', '#6b7280')
+    .style('font-size', '12px')
+    .text('Cost ($)')
+
+  costChart = { svg, g }
+}
+
+function renderCostPerTagChart() {
+  if (!costPerTagChartRef.value || props.calculations.length === 0) return
+
+  // Clear existing chart
+  d3.select(costPerTagChartRef.value).selectAll('*').remove()
+
+  // Group calculations by tag
+  const tagData = new Map<string, { name: string; color: string; value: number }>()
+  
+  props.calculations.forEach((calc) => {
+    const cost = getCost(calc)
+    if (cost <= 0) return // Skip calculations without cost data
+    
+    if (calc.tags && calc.tags.length > 0) {
+      calc.tags.forEach((tag) => {
+        const existing = tagData.get(String(tag.id))
+        if (existing) {
+          existing.value += cost
+        } else {
+          tagData.set(String(tag.id), {
+            name: tag.name,
+            color: tag.color,
+            value: cost
+          })
+        }
+      })
+    } else {
+      // Calculations without tags grouped as "Untagged"
+      const existing = tagData.get('untagged')
+      if (existing) {
+        existing.value += cost
+      } else {
+        tagData.set('untagged', {
+          name: 'Untagged',
+          color: '#9ca3af',
+          value: cost
+        })
+      }
+    }
+  })
+
+  const data = Array.from(tagData.values()).sort((a, b) => b.value - a.value)
+  
+  if (data.length === 0) return
+
+  const margin = { top: 20, right: 20, bottom: 60, left: 60 }
+  const width = costPerTagChartRef.value.clientWidth - margin.left - margin.right
+  const height = 256 - margin.top - margin.bottom
+
+  const svg = d3
+    .select(costPerTagChartRef.value)
+    .append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+
+  const g = svg
+    .append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`)
+
+  const xScale = d3
+    .scaleBand()
+    .domain(data.map(d => d.name))
+    .range([0, width])
+    .padding(0.2)
+
+  const yScale = d3
+    .scaleLinear()
+    .domain([0, d3.max(data, d => d.value) || 0])
+    .nice()
+    .range([height, 0])
+
+  // Add bars with hover interaction
+  const bars = g.selectAll('rect')
+    .data(data)
+    .enter()
+    .append('rect')
+    .attr('x', d => xScale(d.name) || 0)
+    .attr('y', d => yScale(d.value))
+    .attr('width', xScale.bandwidth())
+    .attr('height', d => height - yScale(d.value))
+    .attr('fill', d => d.color)
+    .attr('opacity', 0.8)
+    .on('mouseover', function(event, d) {
+      d3.select(this).attr('opacity', 1)
+      
+      // Show tooltip
+      const tooltip = g.append('g')
+        .attr('class', 'tooltip')
+        .attr('transform', `translate(${(xScale(d.name) || 0) + xScale.bandwidth() / 2},${yScale(d.value) - 10})`)
+      
+      tooltip.append('rect')
+        .attr('x', -50)
+        .attr('y', -20)
+        .attr('width', 100)
+        .attr('height', 18)
+        .attr('fill', '#1f2937')
+        .attr('rx', 4)
+      
+      tooltip.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'white')
+        .attr('font-size', '12px')
+        .text(`$${d.value.toFixed(2)}`)
+    })
+    .on('mouseout', function() {
+      d3.select(this).attr('opacity', 0.8)
+      g.selectAll('.tooltip').remove()
+    })
+
+  // Add axes
+  const xAxis = d3.axisBottom(xScale)
+  const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d => `$${d}`)
+
+  g.append('g')
+    .attr('transform', `translate(0,${height})`)
+    .call(xAxis)
+    .selectAll('text')
+    .style('fill', '#6b7280')
+    .attr('transform', 'rotate(-45)')
+    .style('text-anchor', 'end')
+
+  g.append('g').call(yAxis).selectAll('text').style('fill', '#6b7280')
+
+  // Add axis labels
+  g.append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('y', 0 - margin.left)
+    .attr('x', 0 - height / 2)
+    .attr('dy', '1em')
+    .style('text-anchor', 'middle')
+    .style('fill', '#6b7280')
+    .style('font-size', '12px')
+    .text('Cost ($)')
+
+  costPerTagChart = { svg, g }
+}
+
 watch(() => props.calculations, () => {
+  renderCostChart()
+  renderCostPerTagChart()
   renderEmissionsChart()
   renderEnergyChart()
   renderEmissionsPerTagChart()
   renderEnergyPerTagChart()
 }, { deep: true })
 
+watch([costsCollapsed, emissionsCollapsed, energyCollapsed], () => {
+  // Re-render charts when sections are expanded
+  setTimeout(() => {
+    if (!costsCollapsed.value) {
+      renderCostChart()
+      renderCostPerTagChart()
+    }
+    if (!emissionsCollapsed.value) {
+      renderEmissionsChart()
+      renderEmissionsPerTagChart()
+    }
+    if (!energyCollapsed.value) {
+      renderEnergyChart()
+      renderEnergyPerTagChart()
+    }
+  }, 100)
+})
+
 onMounted(() => {
   setTimeout(() => {
+    renderCostChart()
+    renderCostPerTagChart()
     renderEmissionsChart()
     renderEnergyChart()
     renderEmissionsPerTagChart()
@@ -590,6 +953,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (costChart) {
+    costChart.svg.remove()
+  }
+  if (costPerTagChart) {
+    costPerTagChart.svg.remove()
+  }
   if (emissionsChart) {
     emissionsChart.svg.remove()
   }

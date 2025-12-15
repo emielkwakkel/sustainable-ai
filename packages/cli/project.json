@@ -37,6 +37,5 @@
       }
     }
   },
-  "tags": ["scope:cli", "type:application"],
-  "implicitDependencies": ["types", "config", "core"]
+  "tags": ["scope:cli", "type:application"]
 }

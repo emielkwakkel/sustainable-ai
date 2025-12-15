@@ -38,6 +38,5 @@
       }
     }
   },
-  "tags": ["scope:shared", "type:config"],
-  "implicitDependencies": ["types"]
+  "tags": ["scope:shared", "type:config"]
 }

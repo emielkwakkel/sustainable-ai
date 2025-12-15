@@ -40,6 +40,9 @@
           <p class="text-xs text-green-600 dark:text-green-400 mt-1">
             Avg: {{ formatNumber(averageTokensPerTransaction) }} per transaction
           </p>
+          <p v-if="filteredTotalCosts > 0" class="text-xs text-green-600 dark:text-green-400 mt-1">
+            Total Cost: {{ formatCost(filteredTotalCosts) }}
+          </p>
         </div>
         <Calculator class="w-8 h-8 text-green-600" />
       </div>
@@ -77,7 +80,7 @@
 import { computed } from 'vue'
 import { TrendingUp, Zap, Calculator } from 'lucide-vue-next'
 import type { ProjectAnalytics, Calculation } from '~/types/watttime'
-import { formatCO2, formatEnergyWh, formatNumberWithDots } from '~/utils/formatting'
+import { formatCO2, formatEnergyWh, formatNumberWithDots, formatCost } from '~/utils/formatting'
 
 interface Props {
   analytics: ProjectAnalytics | null
@@ -147,6 +150,24 @@ const filteredEmissionsGrams = computed(() => {
   }
   // No filters active, use analytics grand total
   return props.analytics?.totalEmissionsGrams || 0
+})
+
+const filteredTotalCosts = computed(() => {
+  // If filters are active, always use calculations (even if empty, show 0)
+  if (props.hasActiveFilters) {
+    if (!props.calculations || props.calculations.length === 0) return 0
+    return props.calculations.reduce((sum, calc) => {
+      const cost = calc.calculation_parameters?.cost ?? 0
+      return sum + cost
+    }, 0)
+  }
+  // No filters active, calculate from all calculations if available
+  // Note: analytics doesn't include totalCosts yet, so we calculate from calculations
+  if (!props.calculations || props.calculations.length === 0) return 0
+  return props.calculations.reduce((sum, calc) => {
+    const cost = calc.calculation_parameters?.cost ?? 0
+    return sum + cost
+  }, 0)
 })
 
 const labelPrefix = computed(() => {
